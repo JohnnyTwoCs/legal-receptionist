@@ -1,0 +1,103 @@
+{
+  "firm_name": "Brennan & Clark Family Law",
+  "firm_type": "Family Law",
+  "phone": "(856) 555-0142",
+  "email": "intake@brennanclarklaw.com",
+  "website": "www.brennanclarklaw.com",
+  "address": {
+    "street": "200 Lake Drive East, Suite 300",
+    "city": "Cherry Hill",
+    "state": "NJ",
+    "zip": "08002"
+  },
+  "timezone": "America/New_York",
+  "hours": {
+    "monday": "9:00 AM - 5:00 PM",
+    "tuesday": "9:00 AM - 5:00 PM",
+    "wednesday": "9:00 AM - 5:00 PM",
+    "thursday": "9:00 AM - 5:00 PM",
+    "friday": "9:00 AM - 4:00 PM",
+    "saturday": "Closed",
+    "sunday": "Closed"
+  },
+  "attorneys": [
+    {
+      "name": "Sarah Brennan",
+      "title": "Managing Partner",
+      "bar_number": "NJ-012345-2010",
+      "specialties": ["Divorce", "Asset Division", "Mediation"],
+      "bio": "15 years of family law experience in South Jersey. Certified mediator.",
+      "calendar_id": "demo-brennan"
+    },
+    {
+      "name": "Michael Clark",
+      "title": "Partner",
+      "bar_number": "NJ-067890-2014",
+      "specialties": ["Child Custody", "Child Support", "Protective Orders"],
+      "bio": "10 years focused on custody and child welfare matters. Former public defender.",
+      "calendar_id": "demo-clark"
+    }
+  ],
+  "practice_areas": [
+    {
+      "name": "Divorce / Separation",
+      "description": "Contested and uncontested divorce, legal separation, annulment",
+      "consultation_fee": 250,
+      "typical_retainer": "3000-5000",
+      "attorney": "Sarah Brennan"
+    },
+    {
+      "name": "Child Custody",
+      "description": "Initial custody, modification, relocation, grandparent rights",
+      "consultation_fee": 250,
+      "typical_retainer": "3000-7500",
+      "attorney": "Michael Clark"
+    },
+    {
+      "name": "Child Support",
+      "description": "Establishment, modification, enforcement of child support orders",
+      "consultation_fee": 200,
+      "typical_retainer": "2000-4000",
+      "attorney": "Michael Clark"
+    },
+    {
+      "name": "Protective / Restraining Orders",
+      "description": "Filing and defending against domestic violence restraining orders (TRO/FRO)",
+      "consultation_fee": 0,
+      "typical_retainer": "2500-5000",
+      "attorney": "Michael Clark",
+      "note": "Free initial consultation for protective order matters"
+    },
+    {
+      "name": "Mediation",
+      "description": "Court-ordered or voluntary mediation for divorce and custody disputes",
+      "consultation_fee": 200,
+      "typical_retainer": "2000-3500",
+      "attorney": "Sarah Brennan"
+    }
+  ],
+  "consultation": {
+    "duration_minutes": 30,
+    "default_fee": 250,
+    "free_for": ["Protective / Restraining Orders"],
+    "payment_methods": ["Credit Card", "Check", "Cash"],
+    "location_options": ["In-Office", "Video (Zoom)", "Phone"],
+    "booking_notice": "We typically schedule consultations within 2-3 business days.",
+    "cancellation_policy": "24-hour notice required for rescheduling or cancellation."
+  },
+  "conflict_list": [
+    {"name": "David Morrison", "matter": "Clark v. Morrison (custody)"},
+    {"name": "Jennifer Walsh", "matter": "Walsh v. Walsh (divorce)"},
+    {"name": "Robert Chen", "matter": "Chen v. Chen (support modification)"},
+    {"name": "Amanda Torres", "matter": "Torres TRO (active)"}
+  ],
+  "referral_sources": [
+    "Google Search",
+    "Referral from friend/family",
+    "Avvo",
+    "NJ State Bar Referral",
+    "Other attorney referral",
+    "Social media",
+    "Other"
+  ]
+}

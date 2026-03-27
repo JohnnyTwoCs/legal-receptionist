@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Demo | AI Legal Receptionist | Ledger.AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script type="importmap">
+    { "imports": {
+        "retell-client-js-sdk": "https://cdn.jsdelivr.net/npm/retell-client-js-sdk@2.0.7/+esm",
+        "ogl": "https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm"
+    } }
+    </script>
+    <style>
+        :root {
+            --void: #0A0A0B;
+            --graphite: #1C1C20;
+            --surface-2: #141416;
+            --border: #2A2A30;
+            --teal: #00D4AA;
+            --teal-light: #00F5C4;
+            --teal-dim: rgba(0, 212, 170, 0.08);
+            --cloud: #F0F0F2;
+            --text-2: #8A8A96;
+            --text-3: #55555F;
+            --red: #FF4D4D;
+            --font-head: 'Outfit', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --max-w: 900px;
+            --gutter: 20px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            font-family: var(--font-body);
+            color: var(--cloud);
+            background: var(--void);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(240,240,242,0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        /* Nav */
+        .nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            padding: 0 var(--gutter);
+            background: rgba(10,10,11,0.8);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(42,42,48,0.4);
+        }
+        .nav__inner {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .nav__back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 0.88rem;
+            color: var(--text-2);
+            transition: color 0.3s ease;
+        }
+        .nav__back:hover { color: var(--teal); }
+        .nav__logo {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--cloud);
+        }
+        .nav__logo span { color: var(--teal); }
+
+        /* Main content */
+        main {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 80px var(--gutter) 40px;
+        }
+
+        .voice-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Header */
+        .demo-header {
+            text-align: center;
+        }
+        .demo-header__eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--teal);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .demo-header__firm {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        /* Phone number */
+        .phone-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 4px;
+        }
+        .phone-display a {
+            color: var(--teal);
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: color 0.2s;
+        }
+        .phone-display a:hover { color: var(--teal-light); }
+        .phone-display__sub {
+            font-size: 0.75rem;
+            color: var(--text-3);
+        }
+
+        /* Orb */
+        .orb-panel {
+            background: linear-gradient(145deg, rgba(28,28,32,0.5), rgba(20,20,22,0.3));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+        }
+        .orb-container {
+            width: 280px;
+            height: 280px;
+            position: relative;
+        }
+        .orb-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 50%;
+        }
+        .orb-ring {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 1.5px solid transparent;
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+        .orb-ring.active {
+            border-color: rgba(0, 212, 170, 0.3);
+            box-shadow: 0 0 40px rgba(0, 212, 170, 0.08);
+        }
+        .orb-ring.talking {
+            border-color: rgba(0, 245, 196, 0.5);
+            box-shadow: 0 0 60px rgba(0, 212, 170, 0.15);
+            animation: ring-glow 1.2s ease-in-out infinite;
+        }
+        @keyframes ring-glow {
+            0%, 100% { box-shadow: 0 0 40px rgba(0, 212, 170, 0.08); }
+            50% { box-shadow: 0 0 80px rgba(0, 212, 170, 0.2); }
+        }
+
+        /* Status */
+        .status {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: background 0.3s;
+        }
+        .status-dot.connected { background: var(--teal); }
+        .status-dot.talking { background: var(--teal-light); animation: pulse-dot 0.8s ease-in-out infinite; }
+        .status-dot.error { background: var(--red); }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Transcript */
+        .transcript-box {
+            max-width: 480px;
+            min-height: 44px;
+            padding: 0 16px;
+            text-align: center;
+        }
+        .transcript {
+            font-size: 0.92rem;
+            color: var(--text-2);
+            line-height: 1.55;
+            transition: color 0.3s;
+        }
+        .transcript.agent { color: var(--teal-light); }
+        .transcript.you { color: var(--cloud); }
+
+        /* Controls */
+        .controls { display: flex; gap: 12px; align-items: center; }
+
+        .btn {
+            font-family: var(--font-body);
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-start {
+            font-size: 0.9rem;
+            padding: 12px 32px;
+            background: var(--teal);
+            color: var(--void);
+            box-shadow: 0 4px 16px rgba(0, 212, 170, 0.25);
+        }
+        .btn-start:hover {
+            background: var(--teal-light);
+            box-shadow: 0 4px 24px rgba(0, 212, 170, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-end {
+            font-size: 0.85rem;
+            padding: 11px 24px;
+            background: transparent;
+            color: var(--red);
+            border: 1px solid rgba(255, 77, 77, 0.25);
+        }
+        .btn-end:hover {
+            background: rgba(255, 77, 77, 0.08);
+            border-color: var(--red);
+        }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+        /* Footer */
+        .demo-footer {
+            margin-top: 16px;
+            font-size: 0.72rem;
+            color: var(--text-3);
+        }
+        .demo-footer span { color: var(--teal); }
+
+        /* Mobile-first: call number is primary CTA on phones */
+        .mobile-hint {
+            display: none;
+            font-size: 0.72rem;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        @media (max-width: 600px) {
+            main { padding: 72px var(--gutter) 24px; }
+            .orb-container { width: 200px; height: 200px; }
+            .orb-panel { padding: 20px; }
+            .demo-header__firm { font-size: 1.15rem; }
+            .phone-display a { font-size: 1.3rem; }
+            .phone-display { margin-bottom: 8px; }
+            .mobile-hint { display: block; }
+            .transcript-box { max-width: 100%; padding: 0 8px; }
+            .transcript { font-size: 0.85rem; }
+            .controls { flex-direction: column; width: 100%; max-width: 280px; }
+            .btn-start, .btn-end {
+                width: 100%;
+                justify-content: center;
+                padding: 14px 32px;
+                font-size: 0.95rem;
+                min-height: 48px;
+            }
+            .voice-demo { gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Nav -->
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="/" class="nav__back">&larr; Back to Overview</a>
+            <div class="nav__logo">Ledger<span>.</span>AI</div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="voice-demo">
+            <div class="demo-header">
+                <div class="demo-header__eyebrow">Voice Demo</div>
+                <div class="demo-header__firm">Brennan & Clark Family Law</div>
+            </div>
+
+            <div class="phone-display">
+                <a href="tel:+18777355707">+1 (877) 735-5707</a>
+                <span class="phone-display__sub">Call the number or try the live demo below</span>
+                <span class="mobile-hint">Tap the number above to call directly from your phone</span>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-start" id="startBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                    Start Call
+                </button>
+                <button class="btn btn-end" id="endBtn" disabled>End Call</button>
+            </div>
+
+            <div class="orb-panel">
+                <div class="orb-container" id="orbContainer">
+                    <div class="orb-ring" id="orbRing"></div>
+                </div>
+            </div>
+
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+
+            <div class="transcript-box">
+                <div class="transcript" id="transcript">
+                    Click below to speak with the AI receptionist
+                </div>
+            </div>
+
+            <div class="demo-footer">
+                AI demo, not real legal services. Powered by <span>Ledger.AI</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- WebGL Orb -->
+    <script type="module">
+    import { Renderer, Program, Mesh, Triangle, Vec3 } from "ogl";
+
+    const container = document.getElementById('orbContainer');
+    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false, antialias: true, dpr: window.devicePixelRatio || 1 });
+    const gl = renderer.gl;
+    gl.clearColor(0, 0, 0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    container.appendChild(gl.canvas);
+
+    const vert = `
+        precision highp float;
+        attribute vec2 position;
+        attribute vec2 uv;
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }
+    `;
+
+    const frag = `
+        precision highp float;
+        uniform float iTime;
+        uniform vec3 iResolution;
+        uniform float intensity;
+        uniform float speed;
+        varying vec2 vUv;
+
+        vec3 hash33(vec3 p3) {
+            p3 = fract(p3 * vec3(0.1031, 0.11369, 0.13787));
+            p3 += dot(p3, p3.yxz + 19.19);
+            return -1.0 + 2.0 * fract(vec3(p3.x+p3.y, p3.x+p3.z, p3.y+p3.z) * p3.zyx);
+        }
+
+        float snoise3(vec3 p) {
+            const float K1 = 0.333333333;
+            const float K2 = 0.166666667;
+            vec3 i = floor(p + (p.x+p.y+p.z)*K1);
+            vec3 d0 = p - (i - (i.x+i.y+i.z)*K2);
+            vec3 e = step(vec3(0.0), d0 - d0.yzx);
+            vec3 i1 = e * (1.0 - e.zxy);
+            vec3 i2 = 1.0 - e.zxy * (1.0 - e);
+            vec3 d1 = d0 - (i1 - K2);
+            vec3 d2 = d0 - (i2 - K1);
+            vec3 d3 = d0 - 0.5;
+            vec4 h = max(0.6 - vec4(dot(d0,d0), dot(d1,d1), dot(d2,d2), dot(d3,d3)), 0.0);
+            vec4 n = h*h*h*h * vec4(dot(d0,hash33(i)), dot(d1,hash33(i+i1)), dot(d2,hash33(i+i2)), dot(d3,hash33(i+1.0)));
+            return dot(vec4(31.316), n);
+        }
+
+        vec4 extractAlpha(vec3 c) {
+            float a = max(max(c.r, c.g), c.b);
+            return vec4(c / (a + 1e-5), a);
+        }
+
+        vec4 draw(vec2 uv) {
+            vec3 color1 = vec3(0.0, 0.83, 0.67);
+            vec3 color2 = vec3(0.0, 0.96, 0.77);
+            vec3 color3 = vec3(0.04, 0.06, 0.35);
+
+            float ang = atan(uv.y, uv.x);
+            float len = length(uv);
+            float invLen = len > 0.0 ? 1.0 / len : 0.0;
+
+            float n0 = snoise3(vec3(uv * 0.65, iTime * (0.4 + speed * 0.6))) * 0.5 + 0.5;
+            float innerRadius = 0.6 - intensity * 0.05;
+            float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0);
+            float d0 = distance(uv, (r0 * invLen) * uv);
+            float v0 = (1.0 + intensity * 0.5) / (1.0 + d0 * 10.0);
+            v0 *= smoothstep(r0 * 1.05, r0, len);
+            float cl = cos(ang + iTime * (1.5 + speed * 2.0)) * 0.5 + 0.5;
+
+            float a = iTime * (-0.8 - speed * 1.5);
+            vec2 pos = vec2(cos(a), sin(a)) * r0;
+            float d = distance(uv, pos);
+            float v1 = (1.5 + intensity) / (1.0 + d * d * 5.0);
+            v1 *= 1.0 / (1.0 + d0 * 50.0);
+
+            float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
+            float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len);
+
+            vec3 col = mix(color1, color2, cl);
+            col = mix(color3, col, v0);
+            col = (col + v1) * v2 * v3;
+            col = clamp(col, 0.0, 1.0);
+
+            return extractAlpha(col);
+        }
+
+        void main() {
+            vec2 center = iResolution.xy * 0.5;
+            float size = min(iResolution.x, iResolution.y);
+            vec2 uv = (vUv * iResolution.xy - center) / size * 2.0;
+            uv.x += intensity * 0.08 * sin(uv.y * 8.0 + iTime * 2.0);
+            uv.y += intensity * 0.08 * cos(uv.x * 8.0 + iTime * 2.0);
+            vec4 col = draw(uv);
+            gl_FragColor = vec4(col.rgb * col.a, col.a);
+        }
+    `;
+
+    const geometry = new Triangle(gl);
+    const program = new Program(gl, {
+        vertex: vert,
+        fragment: frag,
+        uniforms: {
+            iTime: { value: 0 },
+            iResolution: { value: new Vec3(gl.canvas.width, gl.canvas.height, 1) },
+            intensity: { value: 0 },
+            speed: { value: 0 },
+        },
+    });
+    const mesh = new Mesh(gl, { geometry, program });
+
+    window.orbState = { intensity: 0, speed: 0, targetIntensity: 0, targetSpeed: 0 };
+
+    function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w === 0 || h === 0) return;
+        renderer.setSize(w * dpr, h * dpr);
+        gl.canvas.style.width = w + 'px';
+        gl.canvas.style.height = h + 'px';
+        program.uniforms.iResolution.value.set(gl.canvas.width, gl.canvas.height, 1);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function update(t) {
+        requestAnimationFrame(update);
+        program.uniforms.iTime.value = t * 0.001;
+        const s = window.orbState;
+        s.intensity += (s.targetIntensity - s.intensity) * 0.08;
+        s.speed += (s.targetSpeed - s.speed) * 0.08;
+        program.uniforms.intensity.value = s.intensity;
+        program.uniforms.speed.value = s.speed;
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        renderer.render({ scene: mesh });
+    }
+    requestAnimationFrame(update);
+    </script>
+
+    <!-- Retell Call Logic -->
+    <script type="module">
+        import { RetellWebClient } from "retell-client-js-sdk";
+
+        const orbRing = document.getElementById('orbRing');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const transcript = document.getElementById('transcript');
+        const startBtn = document.getElementById('startBtn');
+        const endBtn = document.getElementById('endBtn');
+
+        let retellClient = null;
+
+        function setStatus(state, text) {
+            statusDot.className = 'status-dot ' + state;
+            statusText.textContent = text;
+        }
+
+        function setOrbState(state) {
+            const s = window.orbState;
+            orbRing.className = 'orb-ring';
+            if (state === 'talking') {
+                s.targetIntensity = 0.9;
+                s.targetSpeed = 0.8;
+                orbRing.classList.add('active', 'talking');
+            } else if (state === 'listening') {
+                s.targetIntensity = 0.3;
+                s.targetSpeed = 0.3;
+                orbRing.classList.add('active');
+            } else {
+                s.targetIntensity = 0;
+                s.targetSpeed = 0;
+            }
+        }
+
+        async function startCall() {
+            startBtn.disabled = true;
+            setStatus('', 'Connecting...');
+            transcript.textContent = 'Connecting...';
+            setOrbState('listening');
+
+            try {
+                const res = await fetch('/web-call', { method: 'POST' });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                retellClient = new RetellWebClient();
+
+                retellClient.on('call_started', () => {
+                    setStatus('connected', 'Connected');
+                    setOrbState('listening');
+                    transcript.textContent = '';
+                    endBtn.disabled = false;
+                });
+
+                retellClient.on('call_ended', () => {
+                    setStatus('', 'Call ended');
+                    setOrbState('idle');
+                    transcript.textContent = 'Call ended. Thanks for trying the demo!';
+                    transcript.className = 'transcript';
+                    startBtn.disabled = false;
+                    endBtn.disabled = true;
+                });
+
+                retellClient.on('agent_start_talking', () => {
+                    setOrbState('talking');
+                    setStatus('talking', 'Speaking');
+                });
+
+                retellClient.on('agent_stop_talking', () => {
+                    setOrbState('listening');
+                    setStatus('connected', 'Listening');
+                });
+
+                retellClient.on('update', (update) => {
+                    if (update.transcript && update.transcript.length > 0) {
+                        const last = update.transcript[update.transcript.length - 1];
+                        const role = last.role === 'agent' ? 'Agent' : 'You';
+                        transcript.textContent = role + ': ' + last.content;
+                        transcript.className = 'transcript ' + (last.role === 'agent' ? 'agent' : 'you');
+                    }
+                });
+
+                retellClient.on('error', (error) => {
+                    console.error('Retell error:', error);
+                    setStatus('error', 'Error');
+                    setOrbState('idle');
+                    transcript.textContent = 'Connection error. Please try again.';
+                    startBtn.disabled = false;
+                    endBtn.disabled = true;
+                });
+
+                await retellClient.startCall({ accessToken: data.access_token, sampleRate: 24000 });
+            } catch (err) {
+                console.error('Failed:', err);
+                setStatus('error', 'Failed');
+                transcript.textContent = 'Failed to connect. Please refresh.';
+                setOrbState('idle');
+                startBtn.disabled = false;
+            }
+        }
+
+        function endCall() {
+            if (retellClient) retellClient.stopCall();
+        }
+
+        startBtn.addEventListener('click', startCall);
+        endBtn.addEventListener('click', endCall);
+    </script>
+</body>
+</html>

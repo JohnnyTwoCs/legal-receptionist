@@ -1,5 +1,5 @@
 """
-Google Calendar scheduling for legal receptionist consultations.
+Google Calendar scheduling for onboarding assistant consultations.
 
 Uses Google Calendar Python API (service account) on Render,
 falls back to npx Google Workspace CLI locally.

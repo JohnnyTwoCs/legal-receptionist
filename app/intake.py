@@ -1,5 +1,5 @@
 """
-Core conversation engine for the legal receptionist.
+Core conversation engine for the onboarding assistant.
 
 Stage-based intake flow using Claude API with RAG context injection.
 Handles disclaimers, escalation detection, conflict checks, and natural confirmation.

@@ -1,6 +1,6 @@
 """
 Intake Form Generator — creates a professional intake summary from call data
-and sends it as a Gmail draft to the assigned attorney.
+and sends it as a Gmail draft to the assigned attorney (onboarding assistant).
 
 Usage:
     python -m tools.legal_receptionist.intake_form --transcript .tmp/voice-transcripts/latest.json

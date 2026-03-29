@@ -1,5 +1,5 @@
 """
-Google Sheets logging for legal receptionist intake sessions.
+Google Sheets logging for onboarding assistant intake sessions.
 
 Uses Google Sheets Python API (service account) on Render,
 falls back to npx Google Workspace CLI locally.

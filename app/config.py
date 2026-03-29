@@ -1,5 +1,5 @@
 """
-Legal Receptionist configuration — practice areas, disclaimers, escalation rules,
+Onboarding Assistant configuration — practice areas, disclaimers, escalation rules,
 intake stages, and Google Sheets config.
 """
 
@@ -113,7 +113,7 @@ LEGAL_ADVICE_TRIGGERS = [
 # ---------------------------------------------------------------------------
 # Google Sheets config — Intake Log
 # ---------------------------------------------------------------------------
-SHEET_TITLE = "Legal Receptionist Intake Log"
+SHEET_TITLE = "Onboarding Assistant Intake Log"
 
 INTAKE_HEADERS = [
     "Timestamp",
@@ -143,7 +143,7 @@ OUTCOME_TYPES = [
 # ---------------------------------------------------------------------------
 # RAG config
 # ---------------------------------------------------------------------------
-PINECONE_INDEX_NAME = "legal-receptionist"
+PINECONE_INDEX_NAME = "onboarding-assistant"
 PINECONE_NAMESPACE = "family-law"
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536

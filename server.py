@@ -1,5 +1,5 @@
 """
-Combined Flask server for the Legal Receptionist.
+Combined Flask server for the Onboarding Assistant.
 
 Serves the chat UI, voice demo, Retell tool endpoints, and post-call webhooks.
 Single deployable service for Render.
@@ -402,5 +402,5 @@ def post_call_webhook():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
-    print(f"\n  Legal Receptionist running at http://localhost:{port}\n")
+    print(f"\n  Onboarding Assistant running at http://localhost:{port}\n")
     app.run(host="0.0.0.0", port=port, debug=True)

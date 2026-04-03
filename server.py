@@ -118,23 +118,42 @@ def post_call():
     Extracts assessment data from transcript and logs to Sheets.
     """
     data = request.get_json()
+
+    # Log raw payload keys for debugging
+    print(f"[Voice] Webhook payload keys: {list(data.keys())}", flush=True)
+
     event = data.get("event", "")
 
-    if event != "call_analyzed":
+    # Retell may send the call data at top level or nested under "data"
+    call_data = data.get("data", data)  # fallback to top-level
+    call_id = (call_data.get("call_id")
+               or data.get("call_id")
+               or "unknown")
+    transcript = (call_data.get("transcript")
+                  or data.get("transcript")
+                  or "")
+    duration_ms = (call_data.get("duration_ms")
+                   or data.get("duration_ms")
+                   or 0)
+    call_analysis = (call_data.get("call_analysis")
+                     or data.get("call_analysis")
+                     or {})
+
+    print(f"[Voice] Post-call: event={event} call_id={call_id} duration={duration_ms}ms transcript_len={len(transcript)}", flush=True)
+
+    # Accept call_analyzed or process any event with a transcript
+    if event and event != "call_analyzed" and not transcript:
+        print(f"[Voice] Ignoring event: {event}", flush=True)
         return jsonify({"status": "ignored", "event": event})
 
-    call_data = data.get("data", {})
-    call_id = call_data.get("call_id", "unknown")
-    transcript = call_data.get("transcript", "")
-    duration_ms = call_data.get("duration_ms", 0)
-    call_analysis = call_data.get("call_analysis", {})
-
-    print(f"[Voice] Post-call webhook: {call_id} ({duration_ms}ms)", flush=True)
-
-    # Skip very short calls (< 15 seconds)
-    if duration_ms < 15000:
+    # Skip very short calls (< 10 seconds) or empty transcripts
+    if duration_ms and duration_ms < 10000 and not transcript:
         print(f"[Voice] Call too short, skipping: {duration_ms}ms", flush=True)
         return jsonify({"status": "skipped", "reason": "too_short"})
+
+    if not transcript:
+        print(f"[Voice] No transcript found, skipping", flush=True)
+        return jsonify({"status": "skipped", "reason": "no_transcript"})
 
     # Extract assessment data from transcript using Claude
     extracted = _extract_from_transcript(transcript, call_analysis)

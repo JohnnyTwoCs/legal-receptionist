@@ -3,868 +3,1091 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Demo | AI Legal Receptionist | Ledger.AI</title>
-    <meta name="description" content="Chat with an AI legal receptionist. Real-time intake, field extraction, and calendar scheduling.">
+    <title>AI Readiness Assessment | Ledger.AI</title>
+    <meta name="description" content="Find your AI Readiness Score in 45 seconds. Free assessment by Ledger.AI.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300D4AA'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --void: #0A0A0B;
             --graphite: #1C1C20;
-            --graphite-light: #2A2A30;
+            --surface: #141416;
+            --border: #2A2A30;
             --teal: #00D4AA;
             --teal-light: #00F5C4;
-            --teal-dim: rgba(0, 212, 170, 0.1);
-            --teal-border: rgba(0, 212, 170, 0.2);
+            --teal-dim: rgba(0, 212, 170, 0.08);
+            --teal-glow: rgba(0, 212, 170, 0.15);
             --cloud: #F0F0F2;
-            --cloud-dim: rgba(240, 240, 242, 0.7);
-            --red: #FF4D4D;
-            --amber: #FFB020;
-            --green: #00D4AA;
+            --text-2: #8A8A96;
+            --text-3: #55555F;
+            --gold: #FFD700;
             --font-head: 'Outfit', sans-serif;
             --font-body: 'DM Sans', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
         body {
             font-family: var(--font-body);
             background: var(--void);
             color: var(--cloud);
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(240,240,242,0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
         }
 
-        /* Layout: Chat left, Intake panel right */
-        .app {
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            grid-template-rows: auto 1fr;
-            height: 100vh;
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            z-index: 100;
+            background: var(--border);
+            display: none;
+        }
+        .progress-bar.visible { display: block; }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--teal), var(--teal-light));
+            transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 0 12px var(--teal-glow);
         }
 
-        /* Header */
-        .header {
-            grid-column: 1 / -1;
+        /* Live score badge */
+        .score-badge {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            z-index: 100;
             background: var(--graphite);
-            border-bottom: 1px solid var(--teal-border);
-            padding: 0 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 60px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .header-back {
-            display: flex;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-family: var(--font-head);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--teal);
+            display: none;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--cloud-dim);
-            opacity: 0.6;
-            text-decoration: none;
-            transition: all 0.2s;
-            margin-right: 8px;
+            transition: all 0.3s;
         }
-        .header-back:hover { opacity: 1; color: var(--teal); }
-        .header-back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
-
-        .header-divider {
-            width: 1px;
-            height: 24px;
-            background: var(--graphite-light);
-            margin-right: 8px;
-        }
-
-        .firm-name {
-            font-family: var(--font-head);
-            font-size: 18px;
+        .score-badge.visible { display: flex; }
+        .score-badge__label { font-size: 0.65rem; color: var(--text-3); font-weight: 400; }
+        .score-badge__value { min-width: 24px; text-align: right; }
+        .score-flyup {
+            position: absolute;
+            right: 14px;
+            top: -8px;
+            font-size: 0.72rem;
             font-weight: 700;
-            color: var(--cloud);
+            color: var(--teal-light);
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes flyUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-24px); }
         }
 
-        .badge {
-            font-family: var(--font-mono);
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 4px;
-            background: var(--teal-dim);
-            color: var(--teal);
-            border: 1px solid var(--teal-border);
-            letter-spacing: 0.5px;
-        }
-
-        .disclaimer-bar {
-            font-size: 11px;
-            color: var(--cloud-dim);
-            opacity: 0.5;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .btn-transfer {
-            font-family: var(--font-body);
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 14px;
-            border: 1px solid var(--red);
-            background: transparent;
-            color: var(--red);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-transfer:hover {
-            background: var(--red);
-            color: var(--void);
-        }
-
-        .btn-reset {
-            font-family: var(--font-body);
-            font-size: 12px;
-            font-weight: 500;
-            padding: 6px 14px;
-            border: 1px solid var(--graphite-light);
-            background: transparent;
-            color: var(--cloud-dim);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-reset:hover {
-            border-color: var(--cloud-dim);
-            color: var(--cloud);
-        }
-
-        /* Mobile intake toggle */
-        .btn-intake-toggle {
+        /* Step counter */
+        .step-counter {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            z-index: 100;
+            font-size: 0.72rem;
+            color: var(--text-3);
             display: none;
-            font-family: var(--font-mono);
-            font-size: 10px;
-            font-weight: 500;
-            padding: 6px 12px;
-            border: 1px solid var(--teal-border);
-            background: var(--teal-dim);
-            color: var(--teal);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.5px;
         }
-        .btn-intake-toggle:hover {
-            background: rgba(0, 212, 170, 0.15);
-        }
+        .step-counter.visible { display: block; }
+        .step-counter span { color: var(--teal); font-weight: 600; }
 
-        /* Chat area */
-        .chat-area {
-            display: flex;
+        /* Screens */
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 60px 20px;
             flex-direction: column;
-            overflow: hidden;
+            align-items: center;
+            justify-content: center;
         }
-
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px;
+        .screen.active {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
-
-        .messages::-webkit-scrollbar { width: 5px; }
-        .messages::-webkit-scrollbar-track { background: transparent; }
-        .messages::-webkit-scrollbar-thumb { background: var(--graphite-light); border-radius: 3px; }
-
-        .msg {
-            max-width: 75%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.6;
-            animation: fadeIn 0.3s ease;
-        }
-
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .msg-ai {
-            align-self: flex-start;
-            background: var(--graphite);
-            border: 1px solid var(--graphite-light);
-            color: var(--cloud);
-            border-bottom-left-radius: 4px;
+        /* Welcome screen */
+        .welcome { text-align: center; }
+        .welcome__logo {
+            font-family: var(--font-head);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
         }
-
-        .msg-user {
-            align-self: flex-end;
-            background: rgba(0, 212, 170, 0.08);
-            border: 1px solid var(--teal-border);
-            color: var(--cloud);
-            border-bottom-right-radius: 4px;
+        .welcome__logo span { color: var(--teal); }
+        .welcome__tagline {
+            font-size: 0.85rem;
+            color: var(--text-3);
+            margin-bottom: 48px;
         }
-
-        .msg-system {
-            align-self: center;
-            background: transparent;
-            border: 1px solid rgba(0, 212, 170, 0.15);
+        .welcome__hero {
+            font-family: var(--font-head);
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 16px;
+            max-width: 560px;
+        }
+        .welcome__hero em {
+            font-style: normal;
             color: var(--teal);
-            font-size: 11px;
-            font-family: var(--font-mono);
-            padding: 6px 14px;
-            border-radius: 20px;
+        }
+        .welcome__sub {
+            font-size: 1rem;
+            color: var(--text-2);
+            margin-bottom: 40px;
+        }
+        .welcome__fine {
+            font-size: 0.75rem;
+            color: var(--text-3);
+            margin-top: 16px;
         }
 
-        /* Typing indicator */
-        .typing {
-            align-self: flex-start;
-            padding: 12px 16px;
-            background: var(--graphite);
-            border: 1px solid var(--graphite-light);
+        /* Hero glow */
+        .welcome::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 300px;
+            background: radial-gradient(ellipse, rgba(0,212,170,0.06), transparent 70%);
+            pointer-events: none;
+        }
+
+        /* CTA button */
+        .btn-cta {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 16px 40px;
+            border: none;
             border-radius: 12px;
-            border-bottom-left-radius: 4px;
+            background: var(--teal);
+            color: var(--void);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .btn-cta:hover {
+            background: var(--teal-light);
+            box-shadow: 0 0 32px var(--teal-glow);
+            transform: translateY(-2px);
+        }
+        .btn-cta--pulse {
+            animation: ctaPulse 2s ease-in-out infinite;
+        }
+        @keyframes ctaPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.3); }
+            50% { box-shadow: 0 0 0 12px rgba(0,212,170,0); }
+        }
+
+        /* Quiz question */
+        .quiz { max-width: 640px; width: 100%; text-align: center; }
+        .quiz__question {
+            font-family: var(--font-head);
+            font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+            font-weight: 700;
+            margin-bottom: 32px;
+            line-height: 1.2;
+        }
+
+        /* Card grid */
+        .cards {
+            display: grid;
+            gap: 10px;
+            width: 100%;
+        }
+        .cards--2col { grid-template-columns: 1fr 1fr; }
+        .cards--3col { grid-template-columns: 1fr 1fr 1fr; }
+        .cards--horizontal {
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        }
+
+        .card {
+            background: var(--graphite);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+            text-align: center;
+            position: relative;
+        }
+        .card:hover {
+            border-color: rgba(0,212,170,0.3);
+            background: rgba(28,28,32,0.9);
+        }
+        .card.selected {
+            border-color: var(--teal);
+            background: var(--teal-dim);
+            box-shadow: 0 0 20px rgba(0,212,170,0.08);
+            transform: scale(1.02);
+        }
+        .card.dimmed {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .card__check {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--teal);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .card.selected .card__check { display: flex; }
+        .card__check svg { width: 12px; height: 12px; stroke: var(--void); stroke-width: 3; fill: none; }
+        .card__label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        .card__sub {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+        .card--compact { padding: 12px 8px; }
+        .card--compact .card__label { font-size: 0.82rem; }
+
+        /* Multi-select hint */
+        .multi-hint {
+            font-size: 0.75rem;
+            color: var(--text-3);
+            margin-bottom: 16px;
+        }
+        .btn-multi-next {
+            margin-top: 20px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 12px 32px;
+            border: 1px solid var(--teal);
+            background: transparent;
+            color: var(--teal);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
             display: none;
         }
+        .btn-multi-next.visible { display: inline-block; }
+        .btn-multi-next:hover { background: var(--teal-dim); }
 
-        .typing.active { display: flex; gap: 4px; align-items: center; }
-
-        .typing-dot {
-            width: 7px;
-            height: 7px;
-            background: var(--teal);
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Input area */
-        .input-area {
-            padding: 16px 24px;
-            border-top: 1px solid var(--graphite-light);
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
             background: var(--graphite);
+            border: 1px solid var(--teal);
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            color: var(--teal);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 200;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
-        .input-row {
-            display: flex;
-            gap: 10px;
+        /* Score reveal screen */
+        .reveal { text-align: center; }
+        .reveal__score-wrap {
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .reveal__score {
+            font-family: var(--font-head);
+            font-size: clamp(4rem, 12vw, 7rem);
+            font-weight: 800;
+            color: var(--teal);
+            line-height: 1;
+            letter-spacing: -0.04em;
+        }
+        .reveal__out-of {
+            font-size: 1.2rem;
+            color: var(--text-3);
+            font-weight: 400;
+        }
+        .reveal__level-badge {
+            display: inline-block;
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 8px 24px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            opacity: 0;
+            transform: scale(0);
+        }
+        .reveal__level-badge.show {
+            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes badgePop {
+            0% { opacity: 0; transform: scale(0); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .reveal__insight {
+            font-size: 1rem;
+            color: var(--text-2);
+            line-height: 1.6;
+            max-width: 480px;
+            margin: 0 auto 32px;
+            min-height: 60px;
+        }
+        .reveal__insight .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--teal);
+            margin-left: 2px;
+            animation: blink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
 
-        .input-row input {
-            flex: 1;
+        /* Confetti canvas */
+        #confetti {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Booking screen */
+        .booking { max-width: 440px; width: 100%; text-align: center; }
+        .booking__title {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .booking__sub {
+            font-size: 0.9rem;
+            color: var(--text-2);
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-3);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input {
+            width: 100%;
             font-family: var(--font-body);
-            font-size: 14px;
+            font-size: 0.95rem;
             padding: 12px 16px;
-            background: var(--void);
-            border: 1px solid var(--graphite-light);
+            background: var(--graphite);
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--cloud);
             outline: none;
             transition: border-color 0.2s;
         }
-
-        .input-row input:focus {
+        .form-group input:focus {
             border-color: var(--teal);
-            box-shadow: 0 0 0 1px rgba(0, 212, 170, 0.1);
+            box-shadow: 0 0 0 2px rgba(0,212,170,0.08);
+        }
+        .form-group input::placeholder { color: var(--text-3); }
+        .booking__note {
+            font-size: 0.75rem;
+            color: var(--text-3);
+            margin-top: 16px;
+            line-height: 1.5;
         }
 
-        .input-row input::placeholder {
-            color: rgba(240, 240, 242, 0.25);
-        }
-
-        .btn-send {
-            font-family: var(--font-body);
-            font-size: 14px;
-            font-weight: 600;
-            padding: 12px 24px;
-            background: var(--teal);
-            color: var(--void);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-send:hover { background: var(--teal-light); }
-        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        /* Intake panel (right side) */
-        .intake-panel {
-            background: var(--graphite);
-            border-left: 1px solid var(--graphite-light);
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .intake-panel::-webkit-scrollbar { width: 4px; }
-        .intake-panel::-webkit-scrollbar-track { background: transparent; }
-        .intake-panel::-webkit-scrollbar-thumb { background: var(--graphite-light); border-radius: 2px; }
-
-        .panel-title {
-            font-family: var(--font-head);
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--teal);
-            margin-bottom: 16px;
+        /* Confirmation */
+        .confirm { text-align: center; }
+        .confirm__check {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--teal-dim);
+            border: 2px solid var(--teal);
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-
-        .panel-title::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--teal);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            flex-shrink: 0;
+        .confirm__check svg { width: 32px; height: 32px; stroke: var(--teal); stroke-width: 2.5; fill: none; }
+        .confirm__title {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
         }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .confirm__sub {
+            font-size: 0.95rem;
+            color: var(--text-2);
+            margin-bottom: 28px;
+            line-height: 1.5;
         }
-
-        .field-group {
-            margin-bottom: 16px;
-        }
-
-        .field-group-title {
-            font-family: var(--font-mono);
-            font-size: 10px;
-            font-weight: 500;
+        .confirm__link {
             color: var(--teal);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--teal-border);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
         }
+        .confirm__link:hover { color: var(--teal-light); }
 
-        .field {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-        }
-
-        .field-label {
-            font-size: 11px;
-            color: var(--cloud-dim);
-            opacity: 0.5;
-            min-width: 90px;
-            flex-shrink: 0;
-        }
-
-        .field-value {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--cloud);
-            text-align: right;
-            max-width: 200px;
-            word-break: break-word;
-            transition: all 0.3s;
-        }
-
-        .field-value.empty {
-            color: rgba(240, 240, 242, 0.15);
-            font-style: italic;
-            font-weight: 400;
-        }
-
-        .field-value.filled {
-            animation: fieldPop 0.5s ease;
-        }
-
-        @keyframes fieldPop {
-            0% { color: var(--teal); transform: scale(1.05); }
-            100% { color: var(--cloud); transform: scale(1); }
-        }
-
-        /* Stage indicator */
-        .stage-tracker {
-            margin-bottom: 20px;
-        }
-
-        .stage-steps {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .stage-step {
-            font-family: var(--font-mono);
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            background: rgba(255,255,255,0.03);
-            color: rgba(240, 240, 242, 0.2);
-            transition: all 0.3s;
-            border: 1px solid transparent;
-        }
-
-        .stage-step.active {
-            background: var(--teal-dim);
-            color: var(--teal);
-            border-color: var(--teal-border);
-        }
-
-        .stage-step.completed {
-            background: rgba(0, 212, 170, 0.12);
-            color: var(--teal);
-            opacity: 0.5;
-        }
-
-        /* Conflict / Escalation alerts */
-        .alert {
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-top: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            display: none;
-        }
-
-        .alert-conflict {
-            background: rgba(255, 176, 32, 0.08);
-            border: 1px solid rgba(255, 176, 32, 0.25);
-            color: var(--amber);
-        }
-
-        .alert-escalation {
-            background: rgba(255, 77, 77, 0.08);
-            border: 1px solid rgba(255, 77, 77, 0.25);
-            color: var(--red);
-        }
-
-        .alert.visible { display: block; animation: fadeIn 0.3s ease; }
-
-        /* Powered by */
-        .powered-by {
-            margin-top: auto;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255,255,255,0.04);
-            font-size: 10px;
-            color: rgba(240, 240, 242, 0.15);
-            text-align: center;
-        }
-
-        .powered-by span { color: var(--teal); }
-
-        /* Desktop responsive */
-        @media (max-width: 1100px) {
-            .app { grid-template-columns: 1fr 320px; }
-        }
-
-        /* Tablet/Mobile */
-        @media (max-width: 900px) {
-            .app { grid-template-columns: 1fr; }
-            .btn-intake-toggle { display: block; }
-            .disclaimer-bar { display: none; }
-
-            /* Slide-up drawer for intake panel */
-            .intake-panel {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                max-height: 70vh;
-                border-left: none;
-                border-top: 1px solid var(--teal-border);
-                border-radius: 16px 16px 0 0;
-                z-index: 100;
-                transform: translateY(100%);
-                transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-                box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
-            }
-            .intake-panel.open {
-                transform: translateY(0);
-            }
-
-            /* Drawer handle */
-            .intake-panel::before {
-                content: '';
-                display: block;
-                width: 36px;
-                height: 4px;
-                background: var(--graphite-light);
-                border-radius: 2px;
-                margin: 0 auto 12px;
-            }
-
-            /* Backdrop */
-            .drawer-backdrop {
-                display: none;
-                position: fixed;
-                inset: 0;
-                background: rgba(10,10,11,0.6);
-                z-index: 99;
-            }
-            .drawer-backdrop.open { display: block; }
-        }
-
+        /* Responsive */
         @media (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-                padding: 10px 16px;
-                height: auto;
-            }
-            .header-left {
-                flex-wrap: wrap;
-                gap: 8px;
-                width: 100%;
-            }
-            .header-back { margin-right: 0; }
-            .header-divider { display: none; }
-            .firm-name { font-size: 15px; }
-            .header-actions {
-                width: 100%;
-                justify-content: space-between;
-            }
-            .btn-transfer, .btn-reset, .btn-intake-toggle {
-                font-size: 11px;
-                padding: 5px 10px;
-            }
-            .messages { padding: 16px; }
-            .input-area { padding: 12px 16px; }
-            .msg { max-width: 90%; font-size: 13px; }
-            .btn-send { padding: 12px 18px; font-size: 13px; }
+            .cards--2col { grid-template-columns: 1fr; }
+            .cards--3col { grid-template-columns: 1fr 1fr; }
+            .card { padding: 14px 12px; }
+            .screen { padding: 50px 16px; }
+            .score-badge { top: 12px; right: 12px; padding: 5px 10px; font-size: 0.78rem; }
+            .step-counter { top: 12px; left: 12px; }
         }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-left">
-                <a href="/" class="header-back">
-                    <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    Back
-                </a>
-                <div class="header-divider"></div>
-                <div class="firm-name">Brennan & Clark Family Law</div>
-                <div class="badge">AI INTAKE</div>
-                <div class="disclaimer-bar">This is an AI assistant, not an attorney. No legal advice is provided.</div>
-            </div>
-            <div class="header-actions">
-                <button class="btn-intake-toggle" onclick="toggleIntakePanel()">INTAKE PANEL</button>
-                <button class="btn-transfer" onclick="requestTransfer()">Transfer to Attorney</button>
-                <button class="btn-reset" onclick="resetSession()">New Session</button>
-            </div>
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Step counter -->
+    <div class="step-counter" id="stepCounter"><span id="stepNum">1</span> of 5</div>
+
+    <!-- Live score badge -->
+    <div class="score-badge" id="scoreBadge">
+        <span class="score-badge__label">Score</span>
+        <span class="score-badge__value" id="liveScore">0</span>
+        <div class="score-flyup" id="scoreFlyup"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Confetti -->
+    <canvas id="confetti"></canvas>
+
+    <!-- ===== WELCOME ===== -->
+    <div class="screen active" id="screen-welcome">
+        <div class="welcome">
+            <div class="welcome__logo">Ledger<span>.</span>AI</div>
+            <div class="welcome__tagline">Stop losing hours. Start building leverage.</div>
+            <h1 class="welcome__hero">Find Your <em>AI Readiness Score</em> in 45 Seconds</h1>
+            <p class="welcome__sub">5 quick questions. Instant score. Personalized insights.</p>
+            <button class="btn-cta btn-cta--pulse" onclick="startQuiz()">Start Assessment</button>
+            <p class="welcome__fine">No email required. No strings attached.</p>
         </div>
+    </div>
 
-        <!-- Chat -->
-        <div class="chat-area">
-            <div class="messages" id="messages">
-                <div class="msg msg-system">Session started. AI intake assistant is ready.</div>
-            </div>
-            <div class="typing" id="typing">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            </div>
-            <div class="input-area">
-                <div class="input-row">
-                    <input type="text" id="userInput" placeholder="Type your message..."
-                           onkeydown="if(event.key==='Enter')sendMessage()" autofocus>
-                    <button class="btn-send" id="sendBtn" onclick="sendMessage()">Send</button>
+    <!-- ===== Q1: INDUSTRY ===== -->
+    <div class="screen" id="screen-q1">
+        <div class="quiz">
+            <h2 class="quiz__question">What industry are you in?</h2>
+            <div class="cards cards--2col" id="q1-cards">
+                <div class="card" data-value="Professional Services" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Professional Services</div>
+                    <div class="card__sub">Law, Accounting, Consulting</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Drawer backdrop (mobile) -->
-        <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleIntakePanel()"></div>
-
-        <!-- Intake Panel -->
-        <div class="intake-panel" id="intakePanel">
-            <div class="panel-title">Live Intake</div>
-
-            <!-- Stage Tracker -->
-            <div class="stage-tracker">
-                <div class="stage-steps" id="stageSteps">
-                    <div class="stage-step active" data-stage="GREETING">GREETING</div>
-                    <div class="stage-step" data-stage="IDENTITY">IDENTITY</div>
-                    <div class="stage-step" data-stage="MATTER_TYPE">MATTER</div>
-                    <div class="stage-step" data-stage="FACTS">FACTS</div>
-                    <div class="stage-step" data-stage="URGENCY">URGENCY</div>
-                    <div class="stage-step" data-stage="CONFLICT_CHECK">CONFLICT</div>
-                    <div class="stage-step" data-stage="SCHEDULING">SCHEDULE</div>
-                    <div class="stage-step" data-stage="WRAP_UP">WRAP UP</div>
+                <div class="card" data-value="Healthcare & Wellness" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Healthcare & Wellness</div>
                 </div>
-            </div>
-
-            <!-- Contact Info -->
-            <div class="field-group">
-                <div class="field-group-title">Contact Information</div>
-                <div class="field">
-                    <span class="field-label">Name</span>
-                    <span class="field-value empty" id="field-caller_name">Waiting...</span>
+                <div class="card" data-value="Real Estate & Property" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Real Estate & Property</div>
                 </div>
-                <div class="field">
-                    <span class="field-label">Phone</span>
-                    <span class="field-value empty" id="field-phone">Waiting...</span>
+                <div class="card" data-value="Retail & E-Commerce" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Retail & E-Commerce</div>
                 </div>
-                <div class="field">
-                    <span class="field-label">Email</span>
-                    <span class="field-value empty" id="field-email">Waiting...</span>
+                <div class="card" data-value="Manufacturing & Logistics" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Manufacturing & Logistics</div>
                 </div>
-            </div>
-
-            <!-- Case Info -->
-            <div class="field-group">
-                <div class="field-group-title">Case Information</div>
-                <div class="field">
-                    <span class="field-label">Practice Area</span>
-                    <span class="field-value empty" id="field-practice_area">Waiting...</span>
+                <div class="card" data-value="Financial Services" onclick="selectSingle(this, 'industry')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Financial Services</div>
                 </div>
-                <div class="field">
-                    <span class="field-label">Summary</span>
-                    <span class="field-value empty" id="field-matter_summary">Waiting...</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Urgency</span>
-                    <span class="field-value empty" id="field-urgency_level">Waiting...</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Opposing Party</span>
-                    <span class="field-value empty" id="field-opposing_party">Waiting...</span>
-                </div>
-            </div>
-
-            <!-- Status -->
-            <div class="field-group">
-                <div class="field-group-title">Status</div>
-                <div class="field">
-                    <span class="field-label">Conflict Check</span>
-                    <span class="field-value empty" id="field-conflict_flag">Pending</span>
-                </div>
-                <div class="field">
-                    <span class="field-label">Referral Source</span>
-                    <span class="field-value empty" id="field-how_found">Waiting...</span>
-                </div>
-            </div>
-
-            <!-- Alerts -->
-            <div class="alert alert-conflict" id="alertConflict">
-                CONFLICT FLAG &mdash; Potential conflict detected. Escalating to attorney.
-            </div>
-            <div class="alert alert-escalation" id="alertEscalation">
-                ESCALATION &mdash; Caller has been flagged for immediate attorney contact.
-            </div>
-
-            <div class="powered-by">
-                Powered by <span>Ledger.AI</span>
             </div>
         </div>
     </div>
 
+    <!-- ===== Q2: TEAM SIZE ===== -->
+    <div class="screen" id="screen-q2">
+        <div class="quiz">
+            <h2 class="quiz__question">How big is your team?</h2>
+            <div class="cards cards--horizontal" id="q2-cards">
+                <div class="card card--compact" data-value="Just me" onclick="selectSingle(this, 'team_size')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Just me</div>
+                </div>
+                <div class="card card--compact" data-value="2-10" onclick="selectSingle(this, 'team_size')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">2-10</div>
+                </div>
+                <div class="card card--compact" data-value="11-50" onclick="selectSingle(this, 'team_size')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">11-50</div>
+                </div>
+                <div class="card card--compact" data-value="51-200" onclick="selectSingle(this, 'team_size')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">51-200</div>
+                </div>
+                <div class="card card--compact" data-value="200+" onclick="selectSingle(this, 'team_size')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">200+</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Q3: AI TOOLS (multi-select) ===== -->
+    <div class="screen" id="screen-q3">
+        <div class="quiz">
+            <h2 class="quiz__question">Are you using any AI tools today?</h2>
+            <p class="multi-hint">Select all that apply</p>
+            <div class="cards cards--2col" id="q3-cards">
+                <div class="card" data-value="ChatGPT / Claude / AI Assistants" onclick="toggleMulti(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">ChatGPT / Claude</div>
+                    <div class="card__sub">AI Assistants</div>
+                </div>
+                <div class="card" data-value="AI-powered CRM" onclick="toggleMulti(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">AI-powered CRM</div>
+                    <div class="card__sub">HubSpot AI, Salesforce Einstein</div>
+                </div>
+                <div class="card" data-value="Email/marketing automation" onclick="toggleMulti(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Email Automation</div>
+                    <div class="card__sub">Mailchimp, Klaviyo</div>
+                </div>
+                <div class="card" data-value="Workflow automation" onclick="toggleMulti(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Workflow Automation</div>
+                    <div class="card__sub">Zapier, Make, Power Automate</div>
+                </div>
+                <div class="card" data-value="AI code/data tools" onclick="toggleMulti(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">AI Code/Data Tools</div>
+                    <div class="card__sub">Copilot, custom scripts</div>
+                </div>
+                <div class="card" data-value="None yet" onclick="selectNone(this)">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">None yet</div>
+                </div>
+            </div>
+            <button class="btn-multi-next" id="q3Next" onclick="submitMulti()">Continue</button>
+        </div>
+    </div>
+
+    <!-- ===== Q4: PAIN POINT ===== -->
+    <div class="screen" id="screen-q4">
+        <div class="quiz">
+            <h2 class="quiz__question">Where are you losing the most time?</h2>
+            <div class="cards cards--2col" id="q4-cards">
+                <div class="card" data-value="Manual data entry & reporting" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Data Entry & Reporting</div>
+                </div>
+                <div class="card" data-value="Client communication & follow-ups" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Communication & Follow-ups</div>
+                </div>
+                <div class="card" data-value="Document creation & review" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Document Creation</div>
+                </div>
+                <div class="card" data-value="Scheduling & coordination" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Scheduling & Coordination</div>
+                </div>
+                <div class="card" data-value="Inventory / order management" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Inventory & Orders</div>
+                </div>
+                <div class="card" data-value="We're pretty efficient already" onclick="selectSingle(this, 'pain_point')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Pretty Efficient Already</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Q5: AI GOAL ===== -->
+    <div class="screen" id="screen-q5">
+        <div class="quiz">
+            <h2 class="quiz__question">What's your #1 goal with AI?</h2>
+            <div class="cards cards--2col" id="q5-cards">
+                <div class="card" data-value="Cut costs / reduce headcount needs" onclick="selectSingle(this, 'ai_goal')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Cut Costs</div>
+                    <div class="card__sub">Reduce headcount needs</div>
+                </div>
+                <div class="card" data-value="Speed up operations" onclick="selectSingle(this, 'ai_goal')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Speed Up Operations</div>
+                </div>
+                <div class="card" data-value="Improve customer experience" onclick="selectSingle(this, 'ai_goal')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Better Customer Experience</div>
+                </div>
+                <div class="card" data-value="Gain competitive advantage" onclick="selectSingle(this, 'ai_goal')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Competitive Advantage</div>
+                </div>
+                <div class="card" data-value="Just exploring / curious" onclick="selectSingle(this, 'ai_goal')">
+                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="card__label">Just Exploring</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCORE REVEAL ===== -->
+    <div class="screen" id="screen-reveal">
+        <div class="reveal">
+            <div class="reveal__score-wrap">
+                <div class="reveal__score" id="revealScore">0</div>
+                <div class="reveal__out-of">/ 100</div>
+            </div>
+            <div class="reveal__level-badge" id="revealBadge"></div>
+            <div class="reveal__insight" id="revealInsight"></div>
+            <button class="btn-cta" onclick="goToBooking()">Book Your Free Discovery Call</button>
+        </div>
+    </div>
+
+    <!-- ===== BOOKING ===== -->
+    <div class="screen" id="screen-booking">
+        <div class="booking">
+            <div class="booking__title">Almost there.</div>
+            <div class="booking__sub">Drop your info and book a 30-minute call. Jon will review your results beforehand so he comes prepared.</div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="bookName" placeholder="Your name" autofocus>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="bookEmail" placeholder="you@company.com">
+            </div>
+            <div class="form-group">
+                <label>Company</label>
+                <input type="text" id="bookCompany" placeholder="Company name">
+            </div>
+            <button class="btn-cta" style="width:100%;margin-top:8px" onclick="submitBooking()">Book 30-Min Discovery Call</button>
+            <p class="booking__note">Your AI Readiness Score and answers will be shared with Jon to prep for your call.</p>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRMATION ===== -->
+    <div class="screen" id="screen-confirm">
+        <div class="confirm">
+            <div class="confirm__check">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="confirm__title">You're booked!</div>
+            <div class="confirm__sub">Jon will come prepared with insights tailored to your business. Check your email for the calendar invite.</div>
+            <a href="https://getledger.net" class="confirm__link">Learn more about Ledger.AI &rarr;</a>
+        </div>
+    </div>
+
     <script>
-        let sessionId = null;
-        let isProcessing = false;
+    // ---------------------------------------------------------------------------
+    // State
+    // ---------------------------------------------------------------------------
+    const answers = {};
+    let currentStep = 0; // 0=welcome, 1-5=questions, 6=reveal, 7=booking, 8=confirm
+    let liveScore = 0;
+    let assessResult = null;
 
-        // Mobile intake panel toggle
-        function toggleIntakePanel() {
-            const panel = document.getElementById('intakePanel');
-            const backdrop = document.getElementById('drawerBackdrop');
-            panel.classList.toggle('open');
-            backdrop.classList.toggle('open');
+    // Scoring tables (mirrors backend for live score)
+    const INDUSTRY_PTS = {"Professional Services":10,"Financial Services":10,"Healthcare & Wellness":8,"Real Estate & Property":8,"Retail & E-Commerce":6,"Manufacturing & Logistics":6,"Other":5};
+    const TEAM_PTS = {"Just me":5,"2-10":8,"11-50":12,"51-200":15,"200+":15};
+    const TOOL_PTS = 6, TOOL_CAP = 30;
+    const PAIN_PTS = {"Manual data entry & reporting":20,"Client communication & follow-ups":20,"Document creation & review":20,"Scheduling & coordination":20,"Inventory / order management":20,"We're pretty efficient already":10};
+    const GOAL_PTS = {"Cut costs / reduce headcount needs":25,"Speed up operations":25,"Improve customer experience":25,"Gain competitive advantage":25,"Just exploring / curious":10};
+
+    // ---------------------------------------------------------------------------
+    // Navigation
+    // ---------------------------------------------------------------------------
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + id).classList.add('active');
+    }
+
+    function startQuiz() {
+        currentStep = 1;
+        showScreen('q1');
+        document.getElementById('progressBar').classList.add('visible');
+        document.getElementById('scoreBadge').classList.add('visible');
+        document.getElementById('stepCounter').classList.add('visible');
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const pct = (currentStep / 5) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('stepNum').textContent = currentStep;
+    }
+
+    function nextStep() {
+        currentStep++;
+        const screens = ['', 'q1', 'q2', 'q3', 'q4', 'q5', 'reveal'];
+        if (currentStep <= 5) {
+            updateProgress();
+            showScreen(screens[currentStep]);
+        } else {
+            showReveal();
         }
+    }
 
-        // Send initial greeting on load
-        window.addEventListener('load', () => {
-            sendInitialGreeting();
+    // ---------------------------------------------------------------------------
+    // Score animation
+    // ---------------------------------------------------------------------------
+    function addPoints(pts) {
+        if (pts <= 0) return;
+        const oldScore = liveScore;
+        liveScore += pts;
+
+        // Flyup
+        const flyup = document.getElementById('scoreFlyup');
+        flyup.textContent = '+' + pts;
+        flyup.style.animation = 'none';
+        flyup.offsetHeight; // reflow
+        flyup.style.animation = 'flyUp 0.8s ease forwards';
+
+        // Animate counter
+        const el = document.getElementById('liveScore');
+        const duration = 400;
+        const start = performance.now();
+        function tick(now) {
+            const t = Math.min((now - start) / duration, 1);
+            el.textContent = Math.round(oldScore + (liveScore - oldScore) * t);
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Single-select
+    // ---------------------------------------------------------------------------
+    function selectSingle(card, field) {
+        const container = card.parentElement;
+        const wasSelected = card.classList.contains('selected');
+        if (wasSelected) return;
+
+        // Visual
+        container.querySelectorAll('.card').forEach(c => {
+            c.classList.remove('selected');
+            c.classList.add('dimmed');
         });
+        card.classList.remove('dimmed');
+        card.classList.add('selected');
 
-        async function sendInitialGreeting() {
-            showTyping(true);
-            try {
-                const res = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: 'Hello', session_id: sessionId })
-                });
-                const data = await res.json();
-                sessionId = data.session_id;
-                showTyping(false);
-                addMessage(data.response, 'ai');
-                updatePanel(data.fields, data.stage);
-            } catch (err) {
-                showTyping(false);
-                addMessage('Connection error. Please refresh.', 'system');
-            }
+        // Store answer
+        const value = card.dataset.value;
+        answers[field] = value;
+
+        // Score
+        let pts = 0;
+        if (field === 'industry') pts = INDUSTRY_PTS[value] || 5;
+        if (field === 'team_size') pts = TEAM_PTS[value] || 5;
+        if (field === 'pain_point') pts = PAIN_PTS[value] || 15;
+        if (field === 'ai_goal') pts = GOAL_PTS[value] || 15;
+        addPoints(pts);
+
+        // Auto-advance
+        setTimeout(() => {
+            container.querySelectorAll('.card').forEach(c => c.classList.remove('dimmed'));
+            nextStep();
+        }, 500);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Multi-select (Q3: AI Tools)
+    // ---------------------------------------------------------------------------
+    let multiSelected = new Set();
+
+    function toggleMulti(card) {
+        const value = card.dataset.value;
+
+        // If "None yet" was selected, clear it
+        const noneCard = card.parentElement.querySelector('[data-value="None yet"]');
+        if (noneCard && noneCard.classList.contains('selected') && value !== 'None yet') {
+            noneCard.classList.remove('selected');
+            multiSelected.delete('None yet');
         }
 
-        async function sendMessage() {
-            if (isProcessing) return;
-            const input = document.getElementById('userInput');
-            const msg = input.value.trim();
-            if (!msg) return;
-
-            input.value = '';
-            addMessage(msg, 'user');
-            isProcessing = true;
-            document.getElementById('sendBtn').disabled = true;
-            showTyping(true);
-
-            try {
-                const res = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: msg, session_id: sessionId })
-                });
-                const data = await res.json();
-                sessionId = data.session_id;
-                showTyping(false);
-                addMessage(data.response, 'ai');
-                updatePanel(data.fields, data.stage);
-
-                if (data.escalation) {
-                    document.getElementById('alertEscalation').classList.add('visible');
-                }
-            } catch (err) {
-                showTyping(false);
-                addMessage('Connection error. Please try again.', 'system');
-            }
-
-            isProcessing = false;
-            document.getElementById('sendBtn').disabled = false;
-            input.focus();
+        if (card.classList.contains('selected')) {
+            card.classList.remove('selected');
+            multiSelected.delete(value);
+        } else {
+            card.classList.add('selected');
+            multiSelected.add(value);
         }
 
-        function addMessage(text, type) {
-            const container = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = `msg msg-${type}`;
-            div.textContent = text;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+        // Show/hide continue button
+        const btn = document.getElementById('q3Next');
+        btn.classList.toggle('visible', multiSelected.size > 0);
+    }
+
+    function selectNone(card) {
+        const container = card.parentElement;
+        container.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+        multiSelected.clear();
+        card.classList.add('selected');
+        multiSelected.add('None yet');
+        document.getElementById('q3Next').classList.add('visible');
+    }
+
+    function submitMulti() {
+        const tools = [...multiSelected].filter(t => t !== 'None yet');
+        answers.ai_tools = tools;
+
+        // Score
+        const pts = Math.min(tools.length * TOOL_PTS, TOOL_CAP);
+        addPoints(pts);
+
+        // Toast
+        if (tools.length > 0) {
+            showToast("Nice, you're already using AI tools!");
         }
 
-        function showTyping(show) {
-            const typing = document.getElementById('typing');
-            typing.classList.toggle('active', show);
-            if (show) {
-                const container = document.getElementById('messages');
-                container.scrollTop = container.scrollHeight;
-            }
-        }
+        nextStep();
+    }
 
-        function updatePanel(fields, stage) {
-            if (!fields) return;
+    // ---------------------------------------------------------------------------
+    // Toast
+    // ---------------------------------------------------------------------------
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    }
 
-            const fieldMap = [
-                'caller_name', 'phone', 'email', 'practice_area',
-                'matter_summary', 'urgency_level', 'opposing_party', 'how_found'
-            ];
+    // ---------------------------------------------------------------------------
+    // Score Reveal
+    // ---------------------------------------------------------------------------
+    async function showReveal() {
+        currentStep = 6;
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('stepCounter').style.display = 'none';
+        showScreen('reveal');
 
-            fieldMap.forEach(key => {
-                const el = document.getElementById(`field-${key}`);
-                if (el && fields[key]) {
-                    const wasEmpty = el.classList.contains('empty');
-                    el.textContent = fields[key];
-                    el.classList.remove('empty');
-                    if (wasEmpty) {
-                        el.classList.add('filled');
-                        setTimeout(() => el.classList.remove('filled'), 500);
-                    }
-                }
+        // Call backend for official score + insight
+        try {
+            const res = await fetch('/assess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers })
             });
+            assessResult = await res.json();
+        } catch (e) {
+            assessResult = { score: liveScore, level: 'Builder', level_color: '#00D4AA', insight: 'Let\'s talk about where AI can make the biggest impact on your business.', booking_url: '' };
+        }
 
-            // Conflict flag
-            const conflictEl = document.getElementById('field-conflict_flag');
-            if (fields.conflict_flag) {
-                conflictEl.textContent = 'FLAGGED';
-                conflictEl.style.color = 'var(--amber)';
-                conflictEl.classList.remove('empty');
-                document.getElementById('alertConflict').classList.add('visible');
-            } else if (stage === 'SCHEDULING' || stage === 'WRAP_UP') {
-                conflictEl.textContent = 'Clear';
-                conflictEl.style.color = 'var(--green)';
-                conflictEl.classList.remove('empty');
+        // Animate score counter
+        const scoreEl = document.getElementById('revealScore');
+        const target = assessResult.score;
+        const duration = 2000;
+        const start = performance.now();
+
+        function tick(now) {
+            const t = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+            const val = Math.round(target * eased);
+            scoreEl.textContent = val;
+            scoreEl.style.color = assessResult.level_color;
+            if (t < 1) requestAnimationFrame(tick);
+            else onScoreRevealed();
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function onScoreRevealed() {
+        // Badge
+        const badge = document.getElementById('revealBadge');
+        badge.textContent = assessResult.level;
+        badge.style.background = assessResult.level_color + '18';
+        badge.style.color = assessResult.level_color;
+        badge.style.border = '1px solid ' + assessResult.level_color + '40';
+        badge.classList.add('show');
+
+        // Confetti for 60+
+        if (assessResult.score >= 60) fireConfetti();
+
+        // Typewriter insight
+        setTimeout(() => typewriterInsight(assessResult.insight), 600);
+    }
+
+    function typewriterInsight(text) {
+        const el = document.getElementById('revealInsight');
+        el.innerHTML = '<span class="cursor"></span>';
+        let i = 0;
+        function type() {
+            if (i < text.length) {
+                el.innerHTML = text.slice(0, i + 1) + '<span class="cursor"></span>';
+                i++;
+                setTimeout(type, 25);
+            } else {
+                el.innerHTML = text;
             }
+        }
+        type();
+    }
 
-            // Update stage tracker
-            const stages = [
-                'GREETING', 'IDENTITY', 'MATTER_TYPE', 'FACTS',
-                'URGENCY', 'CONFLICT_CHECK', 'SCHEDULING', 'WRAP_UP'
-            ];
-            const currentIdx = stages.indexOf(stage);
+    // ---------------------------------------------------------------------------
+    // Confetti
+    // ---------------------------------------------------------------------------
+    function fireConfetti() {
+        const canvas = document.getElementById('confetti');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-            document.querySelectorAll('.stage-step').forEach((el, i) => {
-                el.classList.remove('active', 'completed');
-                if (i < currentIdx) el.classList.add('completed');
-                else if (i === currentIdx) el.classList.add('active');
+        const colors = ['#00D4AA', '#00F5C4', '#FFD700', '#F0F0F2', '#00D4AA'];
+        const pieces = [];
+
+        for (let i = 0; i < 80; i++) {
+            pieces.push({
+                x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+                y: canvas.height / 2,
+                vx: (Math.random() - 0.5) * 12,
+                vy: Math.random() * -14 - 4,
+                w: Math.random() * 8 + 4,
+                h: Math.random() * 6 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rot: Math.random() * 360,
+                rv: (Math.random() - 0.5) * 10,
+                gravity: 0.25,
+                life: 1,
             });
         }
 
-        async function resetSession() {
-            if (sessionId) {
-                await fetch('/reset', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_id: sessionId })
-                });
-            }
-            sessionId = null;
-            document.getElementById('messages').innerHTML =
-                '<div class="msg msg-system">Session started. AI intake assistant is ready.</div>';
-
-            // Reset panel fields
-            document.querySelectorAll('.field-value').forEach(el => {
-                el.textContent = 'Waiting...';
-                el.className = 'field-value empty';
-                el.style.color = '';
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+            pieces.forEach(p => {
+                if (p.life <= 0) return;
+                alive = true;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rot += p.rv;
+                p.life -= 0.012;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
             });
-            document.getElementById('field-conflict_flag').textContent = 'Pending';
+            if (alive) requestAnimationFrame(draw);
+            else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        requestAnimationFrame(draw);
+    }
 
-            // Reset stage tracker
-            document.querySelectorAll('.stage-step').forEach((el, i) => {
-                el.classList.remove('active', 'completed');
-                if (i === 0) el.classList.add('active');
-            });
+    // ---------------------------------------------------------------------------
+    // Booking
+    // ---------------------------------------------------------------------------
+    function goToBooking() {
+        currentStep = 7;
+        document.getElementById('progressBar').classList.remove('visible');
+        document.getElementById('scoreBadge').classList.remove('visible');
+        showScreen('booking');
+        document.getElementById('bookName').focus();
+    }
 
-            // Hide alerts
-            document.querySelectorAll('.alert').forEach(el => el.classList.remove('visible'));
+    function submitBooking() {
+        const name = document.getElementById('bookName').value.trim();
+        const email = document.getElementById('bookEmail').value.trim();
+        const company = document.getElementById('bookCompany').value.trim();
 
-            // Close mobile drawer if open
-            document.getElementById('intakePanel').classList.remove('open');
-            document.getElementById('drawerBackdrop').classList.remove('open');
-
-            sendInitialGreeting();
+        if (!name || !email) {
+            showToast('Please fill in your name and email.');
+            return;
         }
 
-        function requestTransfer() {
-            addMessage('Transferring to attorney...', 'system');
-            document.getElementById('alertEscalation').classList.add('visible');
-        }
+        // Log to sheets
+        const logData = {
+            name, email, company,
+            score: assessResult.score,
+            level: assessResult.level,
+            industry: answers.industry || '',
+            team_size: answers.team_size || '',
+            ai_tools: answers.ai_tools || [],
+            pain_point: answers.pain_point || '',
+            ai_goal: answers.ai_goal || '',
+            booked: true,
+            insight: assessResult.insight || '',
+        };
+
+        fetch('/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(logData),
+        }).catch(() => {}); // Best-effort
+
+        // Open booking link
+        const url = assessResult.booking_url || 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0XciQbDe7_Ych-_xz1QP5mPqUXkIZ8mWjbQFKCJxY4TGdOR51h_8Srbg753dKn46oMQ-8T8d_F';
+        window.open(url, '_blank');
+
+        // Show confirmation
+        currentStep = 8;
+        showScreen('confirm');
+    }
     </script>
 </body>
 </html>

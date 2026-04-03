@@ -11,14 +11,6 @@ services:
         value: 3.12.0
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: RETELL_API_KEY
-        sync: false
-      - key: RETELL_AGENT_ID
-        sync: false
-      - key: OPEN_AI_API_KEY
-        sync: false
-      - key: PINECONE_API_KEY
-        sync: false
       - key: GOOGLE_REFRESH_TOKEN
         sync: false
       - key: GOOGLE_CLIENT_ID
@@ -26,6 +18,4 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: INTAKE_SHEET_ID
-        sync: false
-      - key: GOOGLE_CALENDAR_ID
         sync: false

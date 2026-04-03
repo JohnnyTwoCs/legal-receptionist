@@ -1,7 +1,7 @@
 """
-Google Sheets logging for onboarding assistant intake sessions.
+Google Sheets logging for Ledger.AI Onboarding Assessments.
 
-Uses Google Sheets Python API (service account) on Render,
+Uses Google Sheets Python API (OAuth2) on Render,
 falls back to npx Google Workspace CLI locally.
 """
 
@@ -11,17 +11,15 @@ import shutil
 import subprocess
 from datetime import datetime
 
-from app.config import SHEET_TITLE, INTAKE_HEADERS
+from app.config import SHEET_TITLE, SHEET_TAB, INTAKE_HEADERS
 
 NPX_PATH = shutil.which("npx") or r"C:\Program Files\nodejs\npx.cmd"
 _GWS_AVAILABLE = shutil.which("npx") is not None
 
-# Will be set after first run creates/finds the sheet
 _sheet_id = os.environ.get("INTAKE_SHEET_ID", "")
 
 
 def _use_python_api():
-    """Check if we should use the Python Google API client."""
     try:
         from app.google_api import is_available
         return is_available()
@@ -30,9 +28,8 @@ def _use_python_api():
 
 
 def _run_gws(args_list):
-    """Run a Google Workspace CLI command and return parsed JSON."""
     if not _GWS_AVAILABLE:
-        raise RuntimeError("Google Workspace CLI not available (server deployment)")
+        raise RuntimeError("Google Workspace CLI not available")
     cmd = [NPX_PATH, "@googleworkspace/cli"] + args_list
     result = subprocess.run(
         cmd, capture_output=True, text=True, timeout=30, shell=(os.name == "nt")
@@ -50,7 +47,6 @@ def _run_gws(args_list):
 
 
 def get_or_create_sheet():
-    """Find or create the intake log spreadsheet. Returns sheet ID."""
     global _sheet_id
     if _sheet_id:
         return _sheet_id
@@ -61,24 +57,21 @@ def get_or_create_sheet():
         from app.google_api import get_sheets_service
         service = get_sheets_service()
         if service:
-            # If INTAKE_SHEET_ID is set, use it directly
             env_id = os.environ.get("INTAKE_SHEET_ID", "")
             if env_id:
                 _sheet_id = env_id
                 return _sheet_id
 
-            # Create new sheet via API
             body = {
                 "properties": {"title": SHEET_TITLE},
-                "sheets": [{"properties": {"title": "INTAKES"}}],
+                "sheets": [{"properties": {"title": SHEET_TAB}}],
             }
             result = service.spreadsheets().create(body=body).execute()
             _sheet_id = result["spreadsheetId"]
 
-            # Add headers
             service.spreadsheets().values().update(
                 spreadsheetId=_sheet_id,
-                range="INTAKES!A1",
+                range=f"{SHEET_TAB}!A1",
                 valueInputOption="RAW",
                 body={"values": [INTAKE_HEADERS]},
             ).execute()
@@ -89,7 +82,6 @@ def get_or_create_sheet():
     if not _GWS_AVAILABLE:
         raise RuntimeError("No Sheets backend available. Set INTAKE_SHEET_ID env var.")
 
-    # Fall back to npx
     result = _run_gws([
         "drive", "files", "list",
         "--params", json.dumps({
@@ -106,7 +98,7 @@ def get_or_create_sheet():
         "sheets", "spreadsheets", "create",
         "--json", json.dumps({
             "properties": {"title": SHEET_TITLE},
-            "sheets": [{"properties": {"title": "INTAKES"}}],
+            "sheets": [{"properties": {"title": SHEET_TAB}}],
         }),
     ])
 
@@ -116,7 +108,7 @@ def get_or_create_sheet():
         "sheets", "spreadsheets", "values", "update",
         "--params", json.dumps({
             "spreadsheetId": _sheet_id,
-            "range": "INTAKES!A1",
+            "range": f"{SHEET_TAB}!A1",
             "valueInputOption": "RAW",
         }),
         "--body", json.dumps({"values": [INTAKE_HEADERS]}),
@@ -125,25 +117,29 @@ def get_or_create_sheet():
     return _sheet_id
 
 
-def log_intake(session_summary):
-    """Log a completed intake session to Google Sheets."""
+def log_assessment(data):
+    """Log a completed assessment to Google Sheets."""
     sheet_id = get_or_create_sheet()
+
+    tools_str = ", ".join(data.get("ai_tools", []))
 
     row = [
         datetime.now().strftime("%Y-%m-%d %H:%M"),
-        session_summary.get("session_id", ""),
-        session_summary.get("caller_name", ""),
-        session_summary.get("phone", ""),
-        session_summary.get("email", ""),
-        session_summary.get("practice_area", ""),
-        session_summary.get("matter_summary", ""),
-        session_summary.get("urgency", ""),
-        session_summary.get("opposing_party", ""),
-        "YES" if session_summary.get("conflict_flag") else "NO",
-        session_summary.get("outcome", ""),
-        "",  # Notes
-        session_summary.get("how_found", ""),
+        data.get("name", ""),
+        data.get("email", ""),
+        data.get("company", ""),
+        str(data.get("score", "")),
+        data.get("level", ""),
+        data.get("industry", ""),
+        data.get("team_size", ""),
+        tools_str,
+        data.get("pain_point", ""),
+        data.get("ai_goal", ""),
+        "YES" if data.get("booked") else "NO",
+        data.get("insight", ""),
     ]
+
+    col_range = f"{SHEET_TAB}!A:{chr(64 + len(INTAKE_HEADERS))}"
 
     use_api = _use_python_api()
 
@@ -153,20 +149,19 @@ def log_intake(session_summary):
         if service:
             service.spreadsheets().values().append(
                 spreadsheetId=sheet_id,
-                range="INTAKES!A:M",
+                range=col_range,
                 valueInputOption="RAW",
                 insertDataOption="INSERT_ROWS",
                 body={"values": [row]},
             ).execute()
-            print(f"[Sheets] Logged intake via API: {session_summary.get('caller_name', '')}", flush=True)
+            print(f"[Sheets] Logged assessment: {data.get('name', 'anonymous')}", flush=True)
             return sheet_id
 
-    # Fall back to npx
     _run_gws([
         "sheets", "spreadsheets", "values", "append",
         "--params", json.dumps({
             "spreadsheetId": sheet_id,
-            "range": "INTAKES!A:M",
+            "range": col_range,
             "valueInputOption": "RAW",
             "insertDataOption": "INSERT_ROWS",
         }),
@@ -174,41 +169,3 @@ def log_intake(session_summary):
     ])
 
     return sheet_id
-
-
-def get_intakes(limit=20):
-    """Get recent intake records."""
-    sheet_id = get_or_create_sheet()
-
-    use_api = _use_python_api()
-    rows = []
-
-    if use_api:
-        from app.google_api import get_sheets_service
-        service = get_sheets_service()
-        if service:
-            result = service.spreadsheets().values().get(
-                spreadsheetId=sheet_id,
-                range="INTAKES!A:M",
-            ).execute()
-            rows = result.get("values", [])
-    else:
-        result = _run_gws([
-            "sheets", "spreadsheets", "values", "get",
-            "--params", json.dumps({
-                "spreadsheetId": sheet_id,
-                "range": "INTAKES!A:M",
-            }),
-        ])
-        rows = result.get("values", []) if result else []
-
-    if len(rows) <= 1:
-        return []
-
-    headers = rows[0]
-    records = []
-    for row in rows[1:][-limit:]:
-        padded = row + [""] * (len(headers) - len(row))
-        records.append(dict(zip(headers, padded)))
-
-    return records

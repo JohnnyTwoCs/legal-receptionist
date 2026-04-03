@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Onboarding Assistant | Ledger.AI</title>
+    <title>AI Legal Receptionist | Ledger.AI</title>
+    <meta name="description" content="AI-powered legal intake assistant that handles client calls, schedules consultations, and never loses a lead. Built by Ledger.AI.">
+    <meta property="og:title" content="AI Legal Receptionist | Ledger.AI">
+    <meta property="og:description" content="Smart intake, scheduling, and follow-up so no caller falls through the cracks.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300D4AA'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,6 +21,7 @@
             --teal: #00D4AA;
             --teal-light: #00F5C4;
             --teal-dim: rgba(0, 212, 170, 0.08);
+            --teal-glow: rgba(0, 212, 170, 0.12);
             --cloud: #F0F0F2;
             --text-2: #8A8A96;
             --text-3: #55555F;
@@ -33,6 +39,7 @@
             background: var(--void);
             min-height: 100vh;
         }
+        /* Dot grid background */
         body::before {
             content: '';
             position: fixed;
@@ -43,6 +50,22 @@
             z-index: 0;
         }
         a { color: inherit; text-decoration: none; }
+
+        /* Entrance animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .anim { opacity: 0; animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .anim-d1 { animation-delay: 0.1s; }
+        .anim-d2 { animation-delay: 0.2s; }
+        .anim-d3 { animation-delay: 0.35s; }
+        .anim-d4 { animation-delay: 0.5s; }
+        .anim-d5 { animation-delay: 0.65s; }
 
         /* Nav */
         .nav {
@@ -65,8 +88,11 @@
         .nav__logo {
             font-family: var(--font-head);
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: var(--cloud);
+            display: flex;
+            align-items: center;
+            gap: 3px;
         }
         .nav__logo span { color: var(--teal); }
         .nav__cta {
@@ -87,8 +113,21 @@
             z-index: 1;
             max-width: var(--max-w);
             margin: 0 auto;
-            padding: 140px var(--gutter) 60px;
+            padding: 140px var(--gutter) 48px;
             text-align: center;
+        }
+        /* Teal gradient glow behind hero */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(ellipse, rgba(0,212,170,0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
         }
         .hero__eyebrow {
             font-family: var(--font-mono);
@@ -102,7 +141,7 @@
         .hero__title {
             font-family: var(--font-head);
             font-weight: 800;
-            font-size: clamp(2rem, 5vw, 3rem);
+            font-size: clamp(2rem, 5vw, 3.2rem);
             line-height: 1.1;
             letter-spacing: -0.03em;
             margin-bottom: 20px;
@@ -113,7 +152,42 @@
             color: var(--text-2);
             line-height: 1.6;
             max-width: 560px;
-            margin: 0 auto 48px;
+            margin: 0 auto;
+        }
+
+        /* Stats strip */
+        .stats {
+            position: relative;
+            z-index: 1;
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 var(--gutter) 48px;
+        }
+        .stats__inner {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .stat {
+            background: var(--surface-2);
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .stat__value {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 4px;
+        }
+        .stat__label {
+            font-size: 0.78rem;
+            color: var(--text-3);
+            line-height: 1.4;
         }
 
         /* Cards */
@@ -122,7 +196,7 @@
             z-index: 1;
             max-width: var(--max-w);
             margin: 0 auto;
-            padding: 0 var(--gutter) 80px;
+            padding: 0 var(--gutter) 40px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
@@ -131,17 +205,26 @@
             background: linear-gradient(145deg, rgba(28,28,32,0.7), rgba(20,20,22,0.5));
             border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 40px 32px;
+            padding: 36px 28px;
             text-decoration: none;
             color: var(--cloud);
-            transition: all 0.3s ease;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
             position: relative;
             overflow: hidden;
         }
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(0,212,170,0.04), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .card:hover::before { opacity: 1; }
         .card:hover {
-            border-color: rgba(0,212,170,0.3);
-            box-shadow: 0 0 40px rgba(0,212,170,0.08);
-            transform: translateY(-2px);
+            border-color: rgba(0,212,170,0.35);
+            box-shadow: 0 8px 40px rgba(0,212,170,0.08), 0 0 0 1px rgba(0,212,170,0.1);
+            transform: translateY(-3px);
         }
         .card__icon {
             width: 48px;
@@ -153,16 +236,22 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 20px;
-            font-size: 22px;
+            color: var(--teal);
+            transition: all 0.35s ease;
+        }
+        .card:hover .card__icon {
+            background: rgba(0,212,170,0.12);
+            border-color: rgba(0,212,170,0.3);
+            box-shadow: 0 0 20px rgba(0,212,170,0.1);
         }
         .card h2 {
             font-family: var(--font-head);
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .card p {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-2);
             line-height: 1.55;
         }
@@ -174,11 +263,65 @@
             opacity: 0;
             transform: translateX(-8px);
             transition: all 0.3s ease;
-            font-size: 18px;
         }
         .card:hover .card__arrow {
             opacity: 1;
             transform: translateX(0);
+        }
+        .card__arrow svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--teal);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* How it works */
+        .how-it-works {
+            position: relative;
+            z-index: 1;
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 20px var(--gutter) 64px;
+        }
+        .how-it-works__title {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--teal);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .step {
+            text-align: center;
+            padding: 24px 16px;
+        }
+        .step__number {
+            font-family: var(--font-head);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--teal);
+            opacity: 0.2;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+        .step__title {
+            font-family: var(--font-head);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .step__desc {
+            font-size: 0.82rem;
+            color: var(--text-3);
+            line-height: 1.5;
         }
 
         /* Footer */
@@ -196,10 +339,15 @@
         @media (max-width: 600px) {
             .cards { grid-template-columns: 1fr; }
             .cards .card:last-child { order: -1; }
-            .hero { padding: 120px var(--gutter) 40px; }
+            .hero { padding: 120px var(--gutter) 32px; }
             .hero__title { font-size: 1.8rem; }
             .hero__subtitle { font-size: 0.95rem; }
-            .card { padding: 28px 24px; min-height: 48px; }
+            .card { padding: 24px 20px; }
+            .stats__inner { grid-template-columns: 1fr; }
+            .stat { padding: 16px 20px; }
+            .stat__value { font-size: 1.3rem; }
+            .steps { grid-template-columns: 1fr; gap: 8px; }
+            .step { padding: 16px; }
         }
     </style>
 </head>
@@ -214,32 +362,84 @@
 
     <!-- Hero -->
     <section class="hero">
-        <div class="hero__eyebrow">Case Study &mdash; Brennan & Clark Family Law</div>
-        <h1 class="hero__title">AI Receptionist That <span>Never Loses a Client</span></h1>
-        <p class="hero__subtitle">
+        <div class="hero__eyebrow anim anim-d1">Case Study &mdash; Brennan &amp; Clark Family Law</div>
+        <h1 class="hero__title anim anim-d2">AI Receptionist That <span>Never Loses a Client</span></h1>
+        <p class="hero__subtitle anim anim-d3">
             A smart voicemail replacement for family law firms. When everyone's with clients, the AI handles intake, scheduling, and follow-up so no caller falls through the cracks.
         </p>
     </section>
 
+    <!-- Stats -->
+    <section class="stats anim anim-d3">
+        <div class="stats__inner">
+            <div class="stat">
+                <div class="stat__value">24/7</div>
+                <div class="stat__label">Always answering</div>
+            </div>
+            <div class="stat">
+                <div class="stat__value">&lt; 2 min</div>
+                <div class="stat__label">Full intake completed</div>
+            </div>
+            <div class="stat">
+                <div class="stat__value">0</div>
+                <div class="stat__label">Missed leads</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Demo Cards -->
     <section class="cards">
-        <a href="/chat-demo" class="card">
-            <div class="card__arrow">&rarr;</div>
-            <div class="card__icon">&#128172;</div>
+        <a href="/chat-demo" class="card anim anim-d4">
+            <div class="card__arrow">
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="card__icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
             <h2>Chat Demo</h2>
             <p>Text-based intake with real-time field extraction, RAG-powered legal knowledge, and live calendar scheduling.</p>
         </a>
-        <a href="/voice-demo" class="card">
-            <div class="card__arrow">&rarr;</div>
-            <div class="card__icon">&#128222;</div>
+        <a href="/voice-demo" class="card anim anim-d5">
+            <div class="card__arrow">
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="card__icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+            </div>
             <h2>Voice Demo</h2>
             <p>Talk to the AI receptionist live. Full intake, calendar booking, and confirmation email, all by voice.</p>
         </a>
     </section>
 
+    <!-- How it works -->
+    <section class="how-it-works anim anim-d5">
+        <div class="how-it-works__title">How It Works</div>
+        <div class="steps">
+            <div class="step">
+                <div class="step__number">01</div>
+                <div class="step__title">Client Calls In</div>
+                <div class="step__desc">AI picks up instantly, no hold music, no voicemail, no missed opportunity.</div>
+            </div>
+            <div class="step">
+                <div class="step__number">02</div>
+                <div class="step__title">Smart Intake</div>
+                <div class="step__desc">Collects name, contact, practice area, and situation details in a natural conversation.</div>
+            </div>
+            <div class="step">
+                <div class="step__number">03</div>
+                <div class="step__title">Books the Consult</div>
+                <div class="step__desc">Checks the attorney's real calendar and locks in a consultation on the spot.</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
-        Built by <span>Ledger.AI</span> &mdash; Demo firm: Brennan & Clark Family Law (fictional)
+        Built by <span>Ledger.AI</span> &mdash; Demo firm: Brennan &amp; Clark Family Law (fictional)
     </footer>
 </body>
 </html>

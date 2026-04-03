@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Demo | AI Onboarding Assistant | Ledger.AI</title>
+    <title>Voice Demo | AI Legal Receptionist | Ledger.AI</title>
+    <meta name="description" content="Talk to an AI legal receptionist live. Full intake, calendar booking, and confirmation by voice.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300D4AA'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -275,8 +277,11 @@
             margin-top: 16px;
             font-size: 0.72rem;
             color: var(--text-3);
+            line-height: 1.6;
         }
         .demo-footer span { color: var(--teal); }
+        .demo-footer a { color: var(--text-3); text-decoration: none; transition: color 0.2s; }
+        .demo-footer a:hover { color: var(--teal); }
 
         /* Mobile-first: call number is primary CTA on phones */
         .mobile-hint {
@@ -356,7 +361,8 @@
             </div>
 
             <div class="demo-footer">
-                AI demo, not real legal services. Powered by <span>Ledger.AI</span>
+                AI demo, not real legal services. Powered by <span>Ledger.AI</span><br>
+                <a href="/">Back to overview</a>
             </div>
         </div>
     </main>

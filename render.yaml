@@ -19,3 +19,7 @@ services:
         sync: false
       - key: INTAKE_SHEET_ID
         sync: false
+      - key: RETELL_API_KEY
+        sync: false
+      - key: RETELL_AGENT_ID
+        sync: false

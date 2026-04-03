@@ -9,6 +9,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+    { "imports": {
+        "retell-client-js-sdk": "https://cdn.jsdelivr.net/npm/retell-client-js-sdk@2.0.7/+esm",
+        "ogl": "https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm"
+    } }
+    </script>
     <style>
         :root {
             --void: #0A0A0B;
@@ -468,12 +474,139 @@
         }
         .confirm__link:hover { color: var(--teal-light); }
 
+        /* ── Welcome mode chooser ── */
+        .welcome__modes {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .welcome__modes .btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .welcome__modes .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+        .btn-voice {
+            font-size: 0.95rem;
+            padding: 15px 24px;
+            background: transparent;
+            color: var(--teal);
+            border: 1.5px solid var(--teal);
+        }
+        .btn-voice:hover { background: var(--teal-dim); box-shadow: 0 0 24px var(--teal-glow); transform: translateY(-1px); }
+        .btn-voice:active { transform: scale(0.98); }
+        .welcome__or {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ── Voice screen ── */
+        .voice { text-align: center; max-width: 480px; width: 100%; }
+        .voice__title {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .voice__sub {
+            font-size: 0.82rem;
+            color: var(--text-3);
+            margin-bottom: 24px;
+        }
+
+        /* Orb */
+        .orb-wrap {
+            background: linear-gradient(145deg, rgba(28,28,32,0.5), rgba(20,20,22,0.3));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            margin: 0 auto 20px;
+            display: inline-block;
+            position: relative;
+        }
+        .orb-container { width: 220px; height: 220px; position: relative; }
+        .orb-container canvas { width: 100% !important; height: 100% !important; border-radius: 50%; }
+        .orb-ring {
+            position: absolute; inset: -5px; border-radius: 50%;
+            border: 1.5px solid transparent;
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+        .orb-ring.active { border-color: rgba(0,212,170,0.3); box-shadow: 0 0 30px rgba(0,212,170,0.08); }
+        .orb-ring.talking {
+            border-color: rgba(0,245,196,0.5);
+            box-shadow: 0 0 50px rgba(0,212,170,0.15);
+            animation: ringGlow 1.2s ease-in-out infinite;
+        }
+        @keyframes ringGlow {
+            0%,100% { box-shadow: 0 0 30px rgba(0,212,170,0.08); }
+            50% { box-shadow: 0 0 60px rgba(0,212,170,0.2); }
+        }
+
+        /* Voice status */
+        .voice__status {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--border);
+            transition: background 0.3s;
+        }
+        .status-dot.on { background: var(--teal); }
+        .status-dot.talking { background: var(--teal-light); animation: pulseDot 0.8s ease-in-out infinite; }
+        .status-dot.error { background: #FF4D4D; }
+        @keyframes pulseDot { 50% { opacity: 0.3; } }
+
+        /* Transcript */
+        .voice__transcript {
+            font-size: 0.88rem;
+            color: var(--text-2);
+            line-height: 1.55;
+            min-height: 40px;
+            max-width: 400px;
+            margin: 0 auto 20px;
+            transition: color 0.2s;
+        }
+        .voice__transcript.agent { color: var(--teal-light); }
+        .voice__transcript.you { color: var(--cloud); }
+
+        /* Voice controls */
+        .voice__controls { display: flex; gap: 10px; justify-content: center; align-items: center; }
+        .btn-end-call {
+            font-size: 0.85rem;
+            padding: 12px 24px;
+            background: transparent;
+            color: #FF4D4D;
+            border: 1px solid rgba(255,77,77,0.3);
+        }
+        .btn-end-call:hover { background: rgba(255,77,77,0.08); border-color: #FF4D4D; }
+
+        .voice__footer {
+            margin-top: 16px;
+            font-size: 0.68rem;
+            color: var(--text-3);
+            line-height: 1.5;
+        }
+        .voice__footer a { color: var(--text-3); text-decoration: none; }
+        .voice__footer a:hover { color: var(--teal); }
+
         /* ── Responsive ── */
         @media (max-width: 600px) {
             .screen { padding: 48px 16px 32px; }
             .welcome { padding: 0 4px; }
+            .welcome__modes { flex-direction: column; max-width: 100%; }
             .option { padding: 13px 14px; min-height: 50px; }
             .option__label { font-size: 0.88rem; }
+            .orb-container { width: 180px; height: 180px; }
+            .orb-wrap { padding: 20px; }
+            .voice__controls { flex-direction: column; width: 100%; max-width: 260px; margin: 0 auto; }
+            .voice__controls .btn { width: 100%; justify-content: center; min-height: 48px; }
         }
         @media (min-width: 600px) {
             .options--grid {
@@ -497,10 +630,53 @@
         <div class="welcome">
             <div class="welcome__logo">Ledger<em>.</em>AI</div>
             <div class="welcome__tagline">Stop losing hours. Start building leverage.</div>
-            <h1 class="welcome__hero">Find Your <em>AI Readiness Score</em> in 45 Seconds</h1>
-            <p class="welcome__sub">5 quick questions. Instant score. Personalized insights.</p>
-            <button class="btn btn-primary btn-primary--pulse" onclick="startQuiz()">Start Assessment</button>
+            <h1 class="welcome__hero">Find Your <em>AI Readiness Score</em></h1>
+            <p class="welcome__sub">Take the quick assessment or talk to our AI consultant live.</p>
+            <div class="welcome__modes">
+                <button class="btn btn-primary" onclick="startQuiz()">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Text Assessment
+                </button>
+                <button class="btn btn-voice" onclick="startVoice()">
+                    <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                    Talk to Ledger
+                </button>
+            </div>
             <p class="welcome__fine">No email required. No strings attached.</p>
+        </div>
+    </div>
+
+    <!-- ===== VOICE ===== -->
+    <div class="screen" id="s-voice">
+        <div class="voice">
+            <div class="voice__title">Talk to Ledger</div>
+            <div class="voice__sub">Our AI consultant will learn about your business and assess your AI readiness.</div>
+
+            <div class="orb-wrap">
+                <div class="orb-container" id="orbContainer">
+                    <div class="orb-ring" id="orbRing"></div>
+                </div>
+            </div>
+
+            <div class="voice__status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+
+            <div class="voice__transcript" id="transcript">Click below to start the conversation</div>
+
+            <div class="voice__controls">
+                <button class="btn btn-primary" id="callBtn" onclick="handleCall()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                    Start Conversation
+                </button>
+                <button class="btn btn-end-call" id="endBtn" style="display:none" onclick="endCall()">End Call</button>
+            </div>
+
+            <div class="voice__footer">
+                AI assessment, not a sales call. Powered by Ledger.AI<br>
+                <a href="#" onclick="event.preventDefault();go('welcome')">Back to options</a>
+            </div>
         </div>
     </div>
 
@@ -1013,6 +1189,189 @@ function submitBooking() {
 
     go('confirm');
 }
+</script>
+
+<!-- ═══ WebGL Orb ═══ -->
+<script type="module">
+import { Renderer, Program, Mesh, Triangle, Vec3 } from "ogl";
+
+const container = document.getElementById('orbContainer');
+if (container) {
+    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false, antialias: true, dpr: window.devicePixelRatio || 1 });
+    const gl = renderer.gl;
+    gl.clearColor(0,0,0,0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    container.appendChild(gl.canvas);
+
+    const vert = `precision highp float; attribute vec2 position; attribute vec2 uv; varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position,0.0,1.0);}`;
+    const frag = `
+    precision highp float;
+    uniform float iTime; uniform vec3 iResolution; uniform float intensity; uniform float speed; varying vec2 vUv;
+    vec3 hash33(vec3 p3){p3=fract(p3*vec3(.1031,.11369,.13787));p3+=dot(p3,p3.yxz+19.19);return -1.0+2.0*fract(vec3(p3.x+p3.y,p3.x+p3.z,p3.y+p3.z)*p3.zyx);}
+    float snoise3(vec3 p){const float K1=.333333333;const float K2=.166666667;vec3 i=floor(p+(p.x+p.y+p.z)*K1);vec3 d0=p-(i-(i.x+i.y+i.z)*K2);vec3 e=step(vec3(0.0),d0-d0.yzx);vec3 i1=e*(1.0-e.zxy);vec3 i2=1.0-e.zxy*(1.0-e);vec3 d1=d0-(i1-K2);vec3 d2=d0-(i2-K1);vec3 d3=d0-0.5;vec4 h=max(0.6-vec4(dot(d0,d0),dot(d1,d1),dot(d2,d2),dot(d3,d3)),0.0);vec4 n=h*h*h*h*vec4(dot(d0,hash33(i)),dot(d1,hash33(i+i1)),dot(d2,hash33(i+i2)),dot(d3,hash33(i+1.0)));return dot(vec4(31.316),n);}
+    vec4 extractAlpha(vec3 c){float a=max(max(c.r,c.g),c.b);return vec4(c/(a+1e-5),a);}
+    vec4 draw(vec2 uv){vec3 c1=vec3(0.0,0.83,0.67);vec3 c2=vec3(0.0,0.96,0.77);vec3 c3=vec3(0.04,0.06,0.35);float ang=atan(uv.y,uv.x);float len=length(uv);float invLen=len>0.0?1.0/len:0.0;float n0=snoise3(vec3(uv*0.65,iTime*(0.4+speed*0.6)))*0.5+0.5;float ir=0.6-intensity*0.05;float r0=mix(mix(ir,1.0,0.4),mix(ir,1.0,0.6),n0);float d0=distance(uv,(r0*invLen)*uv);float v0=(1.0+intensity*0.5)/(1.0+d0*10.0);v0*=smoothstep(r0*1.05,r0,len);float cl=cos(ang+iTime*(1.5+speed*2.0))*0.5+0.5;float a=iTime*(-0.8-speed*1.5);vec2 pos=vec2(cos(a),sin(a))*r0;float d=distance(uv,pos);float v1=(1.5+intensity)/(1.0+d*d*5.0);v1*=1.0/(1.0+d0*50.0);float v2=smoothstep(1.0,mix(ir,1.0,n0*0.5),len);float v3=smoothstep(ir,mix(ir,1.0,0.5),len);vec3 col=mix(c1,c2,cl);col=mix(c3,col,v0);col=(col+v1)*v2*v3;col=clamp(col,0.0,1.0);return extractAlpha(col);}
+    void main(){vec2 center=iResolution.xy*0.5;float size=min(iResolution.x,iResolution.y);vec2 uv=(vUv*iResolution.xy-center)/size*2.0;uv.x+=intensity*0.08*sin(uv.y*8.0+iTime*2.0);uv.y+=intensity*0.08*cos(uv.x*8.0+iTime*2.0);vec4 col=draw(uv);gl_FragColor=vec4(col.rgb*col.a,col.a);}`;
+
+    const geometry = new Triangle(gl);
+    const program = new Program(gl, {
+        vertex: vert, fragment: frag,
+        uniforms: { iTime:{value:0}, iResolution:{value:new Vec3(gl.canvas.width,gl.canvas.height,1)}, intensity:{value:0}, speed:{value:0} }
+    });
+    const mesh = new Mesh(gl, { geometry, program });
+
+    window.orbState = { intensity:0, speed:0, targetIntensity:0, targetSpeed:0 };
+
+    function resize() {
+        const dpr = window.devicePixelRatio||1;
+        const w = container.clientWidth, h = container.clientHeight;
+        if(!w||!h) return;
+        renderer.setSize(w*dpr, h*dpr);
+        gl.canvas.style.width = w+'px'; gl.canvas.style.height = h+'px';
+        program.uniforms.iResolution.value.set(gl.canvas.width, gl.canvas.height, 1);
+    }
+    window.addEventListener('resize', resize); resize();
+
+    function update(t) {
+        requestAnimationFrame(update);
+        program.uniforms.iTime.value = t*0.001;
+        const s = window.orbState;
+        s.intensity += (s.targetIntensity - s.intensity)*0.08;
+        s.speed += (s.targetSpeed - s.speed)*0.08;
+        program.uniforms.intensity.value = s.intensity;
+        program.uniforms.speed.value = s.speed;
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        renderer.render({ scene: mesh });
+    }
+    requestAnimationFrame(update);
+}
+</script>
+
+<!-- ═══ Retell Voice Call ═══ -->
+<script type="module">
+import { RetellWebClient } from "retell-client-js-sdk";
+
+const orbRing = document.getElementById('orbRing');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const transcript = document.getElementById('transcript');
+const callBtn = document.getElementById('callBtn');
+const endBtn = document.getElementById('endBtn');
+
+let retellClient = null;
+let callActive = false;
+
+function setStatus(state, text) {
+    statusDot.className = 'status-dot ' + state;
+    statusText.textContent = text;
+}
+
+function setOrb(state) {
+    const s = window.orbState;
+    orbRing.className = 'orb-ring';
+    if (state === 'talking') {
+        s.targetIntensity = 0.9; s.targetSpeed = 0.8;
+        orbRing.classList.add('active','talking');
+    } else if (state === 'listening') {
+        s.targetIntensity = 0.3; s.targetSpeed = 0.3;
+        orbRing.classList.add('active');
+    } else {
+        s.targetIntensity = 0; s.targetSpeed = 0;
+    }
+}
+
+window.startVoice = function() {
+    document.getElementById('s-welcome').classList.add('exit-up');
+    document.getElementById('s-welcome').classList.remove('active');
+    setTimeout(() => {
+        document.getElementById('s-welcome').classList.remove('exit-up');
+        document.getElementById('s-voice').classList.add('active');
+        // Trigger orb resize after it becomes visible
+        window.dispatchEvent(new Event('resize'));
+    }, 80);
+};
+
+window.handleCall = async function() {
+    if (callActive) return;
+    callBtn.disabled = true;
+    setStatus('', 'Connecting...');
+    transcript.textContent = 'Connecting...';
+    transcript.className = 'voice__transcript';
+    setOrb('listening');
+
+    try {
+        const res = await fetch('/web-call', { method: 'POST' });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        retellClient = new RetellWebClient();
+
+        retellClient.on('call_started', () => {
+            callActive = true;
+            setStatus('on', 'Connected');
+            setOrb('listening');
+            transcript.textContent = '';
+            callBtn.style.display = 'none';
+            endBtn.style.display = 'inline-flex';
+        });
+
+        retellClient.on('call_ended', () => {
+            callActive = false;
+            setStatus('', 'Call ended');
+            setOrb('idle');
+            transcript.textContent = 'Thanks for chatting! Hope that was helpful.';
+            transcript.className = 'voice__transcript';
+            callBtn.style.display = 'inline-flex';
+            callBtn.disabled = false;
+            callBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call Again';
+            endBtn.style.display = 'none';
+        });
+
+        retellClient.on('agent_start_talking', () => {
+            setOrb('talking');
+            setStatus('talking', 'Speaking');
+        });
+
+        retellClient.on('agent_stop_talking', () => {
+            setOrb('listening');
+            setStatus('on', 'Listening');
+        });
+
+        retellClient.on('update', (update) => {
+            if (update.transcript && update.transcript.length > 0) {
+                const last = update.transcript[update.transcript.length - 1];
+                const role = last.role === 'agent' ? 'Ledger' : 'You';
+                transcript.textContent = role + ': ' + last.content;
+                transcript.className = 'voice__transcript ' + (last.role === 'agent' ? 'agent' : 'you');
+            }
+        });
+
+        retellClient.on('error', (err) => {
+            console.error('Retell error:', err);
+            setStatus('error', 'Error');
+            setOrb('idle');
+            transcript.textContent = 'Connection error. Please try again.';
+            callBtn.style.display = 'inline-flex';
+            callBtn.disabled = false;
+            endBtn.style.display = 'none';
+            callActive = false;
+        });
+
+        await retellClient.startCall({ accessToken: data.access_token, sampleRate: 24000 });
+    } catch(err) {
+        console.error('Call failed:', err);
+        setStatus('error', 'Failed');
+        transcript.textContent = 'Failed to connect. Please try again.';
+        setOrb('idle');
+        callBtn.disabled = false;
+        callActive = false;
+    }
+};
+
+window.endCall = function() {
+    if (retellClient) retellClient.stopCall();
+};
 </script>
 </body>
 </html>

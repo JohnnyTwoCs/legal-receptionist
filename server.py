@@ -22,6 +22,7 @@ from flask import Flask, request, jsonify, send_file
 
 from app.scorer import calculate_score, generate_insight
 from app.sheets import log_assessment
+from app.email_sender import send_confirmation
 from app.config import CALENDAR_BOOKING_URL
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
@@ -64,15 +65,22 @@ def assess():
 
 @app.route("/log", methods=["POST"])
 def log():
-    """Log assessment + contact info to Google Sheets."""
+    """Log assessment + contact info to Google Sheets and send confirmation email."""
     data = request.get_json()
 
     try:
         log_assessment(data)
-        return jsonify({"status": "logged"})
     except Exception as e:
         print(f"[Log] Sheets error: {e}", flush=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+
+    # Send confirmation email
+    email = data.get("email", "")
+    name = data.get("name", "")
+    if email and name:
+        data["source"] = data.get("source", "text")
+        send_confirmation(email, name, data)
+
+    return jsonify({"status": "logged"})
 
 
 # ---------------------------------------------------------------------------
@@ -132,11 +140,18 @@ def post_call():
     extracted = _extract_from_transcript(transcript, call_analysis)
 
     if extracted:
+        extracted["source"] = "voice"
         try:
             log_assessment(extracted)
             print(f"[Voice] Logged voice assessment: {extracted.get('name', 'anonymous')}", flush=True)
         except Exception as e:
             print(f"[Voice] Sheets log error: {e}", flush=True)
+
+        # Send confirmation email if we have their email
+        email = extracted.get("email", "")
+        name = extracted.get("name", "")
+        if email and name:
+            send_confirmation(email, name, extracted)
 
     # Save transcript to .tmp for reference
     _save_transcript(call_id, data)

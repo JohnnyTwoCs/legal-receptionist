@@ -871,6 +871,9 @@
             <div class="reveal__badge" id="revealBadge"></div>
             <div class="reveal__insight" id="revealInsight"></div>
             <button class="btn btn-primary" id="revealCta" style="display:none" onclick="goBooking()">Book Your Free Discovery Call</button>
+            <div id="revealSoftOut" style="display:none;margin-top:14px;">
+                <a href="#" onclick="event.preventDefault();goProposal()" style="font-size:0.82rem;color:var(--text-3);text-decoration:none;transition:color 0.2s;">Not ready to book? Get a custom proposal instead.</a>
+            </div>
         </div>
     </div>
 
@@ -884,6 +887,29 @@
             <div class="field"><label>Company</label><input type="text" id="bCompany" placeholder="Company name"></div>
             <button class="btn btn-primary btn--wide" style="margin-top:6px" onclick="submitBooking()">Book 30-Min Discovery Call</button>
             <p class="booking__note">Your score and answers will be shared with Jon to prep for your call.</p>
+        </div>
+    </div>
+
+    <!-- ===== PROPOSAL (soft out) ===== -->
+    <div class="screen" id="s-proposal">
+        <div class="booking">
+            <div class="booking__title">No pressure.</div>
+            <div class="booking__sub">Drop your info and Jon will send you a custom proposal tailored to your assessment results within 48 hours.</div>
+            <div class="field"><label>Name</label><input type="text" id="pName" placeholder="Your name"></div>
+            <div class="field"><label>Email</label><input type="email" id="pEmail" placeholder="you@company.com"></div>
+            <div class="field"><label>Company</label><input type="text" id="pCompany" placeholder="Company name"></div>
+            <button class="btn btn-primary btn--wide" style="margin-top:6px" onclick="submitProposal()">Send Me a Proposal</button>
+            <p class="booking__note">Jon will review your score and answers to build a proposal specific to your business.</p>
+        </div>
+    </div>
+
+    <!-- ===== PROPOSAL CONFIRMATION ===== -->
+    <div class="screen" id="s-proposal-confirm">
+        <div class="confirm">
+            <div class="confirm__icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="confirm__title">Proposal incoming!</div>
+            <div class="confirm__sub">Jon will review your AI readiness results and send a custom proposal to your inbox within 48 hours.</div>
+            <a href="https://getledger.net" class="confirm__link">Learn more about Ledger.AI &rarr;</a>
         </div>
     </div>
 
@@ -1106,6 +1132,7 @@ function finishReveal() {
         typewrite(result.insight, document.getElementById('revealInsight'), () => {
             document.getElementById('revealCta').style.display = 'inline-block';
             document.getElementById('revealCta').style.animation = 'pop 0.3s ease forwards';
+            setTimeout(() => { document.getElementById('revealSoftOut').style.display = 'block'; }, 600);
         });
     }, 500);
 }
@@ -1188,6 +1215,42 @@ function submitBooking() {
     window.open(url, '_blank');
 
     go('confirm');
+}
+
+// ─── Proposal (soft out) ───
+function goProposal() {
+    document.getElementById('progress').classList.remove('visible');
+    go('proposal');
+    setTimeout(() => document.getElementById('pName').focus(), 300);
+}
+
+function submitProposal() {
+    const name = document.getElementById('pName').value.trim();
+    const email = document.getElementById('pEmail').value.trim();
+    const company = document.getElementById('pCompany').value.trim();
+    if (!name || !email) { showToast('Name and email are required.'); return; }
+
+    const logData = {
+        name, email, company,
+        score: result.score,
+        level: result.level,
+        industry: answers.industry || '',
+        team_size: answers.team_size || '',
+        ai_tools: Array.isArray(answers.ai_tools) ? answers.ai_tools : [answers.ai_tools || ''],
+        pain_point: Array.isArray(answers.pain_point) ? answers.pain_point.join(', ') : (answers.pain_point || ''),
+        ai_goal: Array.isArray(answers.ai_goal) ? answers.ai_goal.join(', ') : (answers.ai_goal || ''),
+        booked: false,
+        insight: result.insight || '',
+        request_type: 'proposal',
+    };
+
+    fetch('/log', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(logData),
+    }).catch(() => {});
+
+    go('proposal-confirm');
 }
 </script>
 

@@ -13,10 +13,14 @@ import json
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 SCOPES = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/gmail.send",
 ]
 
 # OAuth client credentials loaded from env (set in .env or Render dashboard)
@@ -26,6 +30,7 @@ _DEFAULT_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 _credentials = None
 _calendar_service = None
 _sheets_service = None
+_gmail_service = None
 
 
 def _get_credentials():
@@ -100,6 +105,21 @@ def get_sheets_service():
     return _sheets_service
 
 
+def get_gmail_service():
+    """Get an authenticated Gmail API service for sending emails."""
+    global _gmail_service
+    if _gmail_service:
+        return _gmail_service
+
+    creds = _get_credentials()
+    if not creds:
+        return None
+
+    from googleapiclient.discovery import build
+    _gmail_service = build("gmail", "v1", credentials=creds)
+    return _gmail_service
+
+
 def is_available():
     """Check if Google API credentials are configured."""
     return _get_credentials() is not None
@@ -119,8 +139,10 @@ def run_auth_flow():
         }
     }
 
+    # Set environment variable to allow scope changes without error
+    os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
     flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-    creds = flow.run_local_server(port=8090, prompt="consent", access_type="offline")
+    creds = flow.run_local_server(port=8096, prompt="consent", access_type="offline")
 
     # Save token locally
     token_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".tmp"))

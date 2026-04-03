@@ -124,20 +124,12 @@ def post_call():
 
     event = data.get("event", "")
 
-    # Retell may send the call data at top level or nested under "data"
-    call_data = data.get("data", data)  # fallback to top-level
-    call_id = (call_data.get("call_id")
-               or data.get("call_id")
-               or "unknown")
-    transcript = (call_data.get("transcript")
-                  or data.get("transcript")
-                  or "")
-    duration_ms = (call_data.get("duration_ms")
-                   or data.get("duration_ms")
-                   or 0)
-    call_analysis = (call_data.get("call_analysis")
-                     or data.get("call_analysis")
-                     or {})
+    # Retell sends call data under "call" key
+    call_data = data.get("call") or data.get("data") or data
+    call_id = call_data.get("call_id", "unknown")
+    transcript = call_data.get("transcript", "")
+    duration_ms = call_data.get("duration_ms", 0)
+    call_analysis = call_data.get("call_analysis", {})
 
     print(f"[Voice] Post-call: event={event} call_id={call_id} duration={duration_ms}ms transcript_len={len(transcript)}", flush=True)
 

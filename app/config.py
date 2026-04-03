@@ -36,22 +36,17 @@ AI_TOOLS_OPTIONS = [
 AI_TOOLS_PTS_EACH = 6
 AI_TOOLS_CAP = 30
 
-PAIN_POINT_SCORES = {
-    "Manual data entry & reporting": 20,
-    "Client communication & follow-ups": 20,
-    "Document creation & review": 20,
-    "Scheduling & coordination": 20,
-    "Inventory / order management": 20,
-    "We're pretty efficient already": 10,
-}
+# Pain point: multi-select now. 5 pts each, cap 20. "Pretty efficient" = 10 solo.
+PAIN_POINT_PTS_EACH = 5
+PAIN_POINT_CAP = 20
+PAIN_POINT_NONE_VALUE = "We're pretty efficient already"
+PAIN_POINT_NONE_PTS = 10
 
-AI_GOAL_SCORES = {
-    "Cut costs / reduce headcount needs": 25,
-    "Speed up operations": 25,
-    "Improve customer experience": 25,
-    "Gain competitive advantage": 25,
-    "Just exploring / curious": 10,
-}
+# AI goal: multi-select. 6 pts each, cap 25. "Just exploring" = 10 solo.
+AI_GOAL_PTS_EACH = 6
+AI_GOAL_CAP = 25
+AI_GOAL_NONE_VALUE = "Just exploring / curious"
+AI_GOAL_NONE_PTS = 10
 
 # ---------------------------------------------------------------------------
 # Readiness Levels

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
     <title>AI Readiness Assessment | Ledger.AI</title>
     <meta name="description" content="Find your AI Readiness Score in 45 seconds. Free assessment by Ledger.AI.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300D4AA'/></svg>">
@@ -17,8 +17,8 @@
             --border: #2A2A30;
             --teal: #00D4AA;
             --teal-light: #00F5C4;
-            --teal-dim: rgba(0, 212, 170, 0.08);
-            --teal-glow: rgba(0, 212, 170, 0.15);
+            --teal-dim: rgba(0, 212, 170, 0.06);
+            --teal-glow: rgba(0, 212, 170, 0.12);
             --cloud: #F0F0F2;
             --text-2: #8A8A96;
             --text-3: #55555F;
@@ -27,1067 +27,992 @@
             --font-body: 'DM Sans', sans-serif;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { -webkit-font-smoothing: antialiased; }
+        html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
         body {
             font-family: var(--font-body);
             background: var(--void);
             color: var(--cloud);
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
+        /* Subtle dot grid */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background-image: radial-gradient(circle, rgba(240,240,242,0.03) 1px, transparent 1px);
+            background-image: radial-gradient(circle, rgba(240,240,242,0.025) 1px, transparent 1px);
             background-size: 32px 32px;
             pointer-events: none;
         }
 
-        /* Progress bar */
-        .progress-bar {
+        /* ── Progress bar ── */
+        .progress {
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 4px;
+            height: 3px;
             z-index: 100;
-            background: var(--border);
-            display: none;
+            background: rgba(42,42,48,0.5);
+            opacity: 0;
+            transition: opacity 0.4s;
         }
-        .progress-bar.visible { display: block; }
-        .progress-fill {
+        .progress.visible { opacity: 1; }
+        .progress__fill {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, var(--teal), var(--teal-light));
-            transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 0 12px var(--teal-glow);
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Live score badge */
-        .score-badge {
+        /* ── Step counter ── */
+        .step-label {
             position: fixed;
-            top: 16px;
-            right: 20px;
+            top: 12px; left: 50%;
+            transform: translateX(-50%);
             z-index: 100;
-            background: var(--graphite);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 6px 14px;
-            font-family: var(--font-head);
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--teal);
-            display: none;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s;
-        }
-        .score-badge.visible { display: flex; }
-        .score-badge__label { font-size: 0.65rem; color: var(--text-3); font-weight: 400; }
-        .score-badge__value { min-width: 24px; text-align: right; }
-        .score-flyup {
-            position: absolute;
-            right: 14px;
-            top: -8px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: var(--teal-light);
-            opacity: 0;
-            pointer-events: none;
-        }
-        @keyframes flyUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-24px); }
-        }
-
-        /* Step counter */
-        .step-counter {
-            position: fixed;
-            top: 16px;
-            left: 20px;
-            z-index: 100;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             color: var(--text-3);
-            display: none;
+            letter-spacing: 0.5px;
+            opacity: 0;
+            transition: opacity 0.4s;
         }
-        .step-counter.visible { display: block; }
-        .step-counter span { color: var(--teal); font-weight: 600; }
+        .step-label.visible { opacity: 1; }
+        .step-label span { color: var(--cloud); font-weight: 600; }
 
-        /* Screens */
+        /* ── Screen system ── */
         .screen {
-            display: none;
-            min-height: 100vh;
-            padding: 60px 20px;
+            position: absolute;
+            inset: 0;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 56px 20px 40px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            transform: translateY(16px);
+            will-change: opacity, transform;
         }
         .screen.active {
-            display: flex;
-            animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            position: relative;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .screen.exit-up {
+            opacity: 0;
+            transform: translateY(-20px);
+            position: absolute;
         }
 
-        /* Welcome screen */
-        .welcome { text-align: center; }
+        /* ── Welcome ── */
+        .welcome { text-align: center; max-width: 520px; }
         .welcome__logo {
             font-family: var(--font-head);
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
         }
-        .welcome__logo span { color: var(--teal); }
+        .welcome__logo em { font-style: normal; color: var(--teal); }
         .welcome__tagline {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-3);
-            margin-bottom: 48px;
+            margin-bottom: 56px;
         }
         .welcome__hero {
             font-family: var(--font-head);
-            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-size: clamp(1.6rem, 5vw, 2.6rem);
             font-weight: 800;
             line-height: 1.15;
             letter-spacing: -0.03em;
-            margin-bottom: 16px;
-            max-width: 560px;
+            margin-bottom: 14px;
         }
-        .welcome__hero em {
-            font-style: normal;
-            color: var(--teal);
-        }
+        .welcome__hero em { font-style: normal; color: var(--teal); }
         .welcome__sub {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-2);
-            margin-bottom: 40px;
+            margin-bottom: 36px;
+            line-height: 1.5;
         }
         .welcome__fine {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-3);
-            margin-top: 16px;
+            margin-top: 14px;
         }
 
-        /* Hero glow */
-        .welcome::before {
-            content: '';
-            position: absolute;
-            top: 20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 500px;
-            height: 300px;
-            background: radial-gradient(ellipse, rgba(0,212,170,0.06), transparent 70%);
-            pointer-events: none;
-        }
-
-        /* CTA button */
-        .btn-cta {
+        /* ── CTA button ── */
+        .btn {
             font-family: var(--font-body);
-            font-size: 1rem;
             font-weight: 700;
-            padding: 16px 40px;
             border: none;
             border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            touch-action: manipulation;
+        }
+        .btn-primary {
+            font-size: 0.95rem;
+            padding: 15px 36px;
             background: var(--teal);
             color: var(--void);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
         }
-        .btn-cta:hover {
+        .btn-primary:hover {
             background: var(--teal-light);
-            box-shadow: 0 0 32px var(--teal-glow);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 24px var(--teal-glow);
+            transform: translateY(-1px);
         }
-        .btn-cta--pulse {
-            animation: ctaPulse 2s ease-in-out infinite;
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary--pulse { animation: pulse 2.5s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.25); }
+            50% { box-shadow: 0 0 0 10px rgba(0,212,170,0); }
         }
-        @keyframes ctaPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.3); }
-            50% { box-shadow: 0 0 0 12px rgba(0,212,170,0); }
+        .btn-secondary {
+            font-size: 0.88rem;
+            padding: 13px 28px;
+            background: transparent;
+            color: var(--teal);
+            border: 1px solid rgba(0,212,170,0.3);
         }
+        .btn-secondary:hover { background: var(--teal-dim); border-color: var(--teal); }
+        .btn-secondary:active { transform: scale(0.98); }
+        .btn--wide { width: 100%; justify-content: center; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
 
-        /* Quiz question */
-        .quiz { max-width: 640px; width: 100%; text-align: center; }
+        /* ── Quiz container ── */
+        .quiz { max-width: 540px; width: 100%; }
         .quiz__question {
             font-family: var(--font-head);
-            font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+            font-size: clamp(1.2rem, 3.5vw, 1.6rem);
             font-weight: 700;
-            margin-bottom: 32px;
-            line-height: 1.2;
+            text-align: center;
+            margin-bottom: 8px;
+            line-height: 1.25;
+        }
+        .quiz__hint {
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-3);
+            margin-bottom: 24px;
         }
 
-        /* Card grid */
-        .cards {
-            display: grid;
-            gap: 10px;
+        /* ── Option cards ── */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             width: 100%;
         }
-        .cards--2col { grid-template-columns: 1fr 1fr; }
-        .cards--3col { grid-template-columns: 1fr 1fr 1fr; }
-        .cards--horizontal {
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-        }
-
-        .card {
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
             background: var(--graphite);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 16px;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-            text-align: center;
-            position: relative;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            min-height: 52px;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        .card:hover {
-            border-color: rgba(0,212,170,0.3);
-            background: rgba(28,28,32,0.9);
-        }
-        .card.selected {
+        .option:hover { border-color: rgba(0,212,170,0.25); background: rgba(28,28,32,0.95); }
+        .option:active { transform: scale(0.985); }
+        .option.selected {
             border-color: var(--teal);
-            background: var(--teal-dim);
-            box-shadow: 0 0 20px rgba(0,212,170,0.08);
-            transform: scale(1.02);
+            background: rgba(0,212,170,0.06);
         }
-        .card.dimmed {
-            opacity: 0.35;
-            pointer-events: none;
-        }
-        .card__check {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 20px;
-            height: 20px;
+        .option.dimmed { opacity: 0.3; pointer-events: none; }
+
+        /* Checkbox / radio indicator */
+        .option__indicator {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: var(--teal);
-            display: none;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+            display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s ease;
         }
-        .card.selected .card__check { display: flex; }
-        .card__check svg { width: 12px; height: 12px; stroke: var(--void); stroke-width: 3; fill: none; }
-        .card__label {
-            font-size: 0.88rem;
+        .option__indicator--multi { border-radius: 6px; }
+        .option.selected .option__indicator {
+            border-color: var(--teal);
+            background: var(--teal);
+        }
+        .option__indicator svg {
+            width: 12px; height: 12px;
+            stroke: var(--void);
+            stroke-width: 3;
+            fill: none;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+        }
+        .option.selected .option__indicator svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .option__text {
+            flex: 1;
+        }
+        .option__label {
+            font-size: 0.92rem;
             font-weight: 500;
-            line-height: 1.3;
+            line-height: 1.35;
         }
-        .card__sub {
+        .option__sub {
             font-size: 0.72rem;
             color: var(--text-3);
-            margin-top: 4px;
+            margin-top: 2px;
         }
-        .card--compact { padding: 12px 8px; }
-        .card--compact .card__label { font-size: 0.82rem; }
 
-        /* Multi-select hint */
-        .multi-hint {
-            font-size: 0.75rem;
-            color: var(--text-3);
-            margin-bottom: 16px;
-        }
-        .btn-multi-next {
-            margin-top: 20px;
+        /* Other text input (inline) */
+        .other-input {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px 14px;
             font-family: var(--font-body);
-            font-size: 0.9rem;
-            font-weight: 600;
-            padding: 12px 32px;
-            border: 1px solid var(--teal);
-            background: transparent;
-            color: var(--teal);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
+            font-size: 0.88rem;
+            background: var(--void);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--cloud);
+            outline: none;
+            transition: border-color 0.2s;
             display: none;
         }
-        .btn-multi-next.visible { display: inline-block; }
-        .btn-multi-next:hover { background: var(--teal-dim); }
+        .other-input.visible { display: block; }
+        .other-input:focus { border-color: var(--teal); }
+        .other-input::placeholder { color: var(--text-3); }
 
-        /* Toast notification */
+        /* Continue button for multi-select */
+        .quiz__continue {
+            margin-top: 20px;
+            display: none;
+            width: 100%;
+        }
+        .quiz__continue.visible { display: block; }
+
+        /* ── Toast ── */
         .toast {
             position: fixed;
-            bottom: 40px;
+            bottom: 32px;
             left: 50%;
-            transform: translateX(-50%) translateY(20px);
+            transform: translateX(-50%) translateY(16px);
             background: var(--graphite);
-            border: 1px solid var(--teal);
+            border: 1px solid rgba(0,212,170,0.3);
             border-radius: 10px;
             padding: 10px 20px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--teal);
             opacity: 0;
-            transition: all 0.4s ease;
+            transition: all 0.35s ease;
             z-index: 200;
             white-space: nowrap;
+            pointer-events: none;
         }
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* Score reveal screen */
-        .reveal { text-align: center; }
-        .reveal__score-wrap {
+        /* ── Score reveal ── */
+        .reveal { text-align: center; max-width: 480px; }
+        .reveal__loading {
+            font-size: 0.85rem;
+            color: var(--text-3);
             margin-bottom: 24px;
-            position: relative;
         }
+        .reveal__loading .dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        .reveal__score-wrap { margin-bottom: 20px; }
         .reveal__score {
             font-family: var(--font-head);
-            font-size: clamp(4rem, 12vw, 7rem);
+            font-size: clamp(4rem, 14vw, 7rem);
             font-weight: 800;
-            color: var(--teal);
             line-height: 1;
             letter-spacing: -0.04em;
+            color: var(--teal);
         }
         .reveal__out-of {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--text-3);
-            font-weight: 400;
         }
-        .reveal__level-badge {
+        .reveal__badge {
             display: inline-block;
             font-family: var(--font-head);
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
-            padding: 8px 24px;
+            padding: 7px 22px;
             border-radius: 20px;
             margin-bottom: 24px;
             opacity: 0;
             transform: scale(0);
         }
-        .reveal__level-badge.show {
-            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        .reveal__badge.show {
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        @keyframes badgePop {
-            0% { opacity: 0; transform: scale(0); }
-            100% { opacity: 1; transform: scale(1); }
+        @keyframes pop {
+            to { opacity: 1; transform: scale(1); }
         }
         .reveal__insight {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-2);
-            line-height: 1.6;
-            max-width: 480px;
-            margin: 0 auto 32px;
-            min-height: 60px;
+            line-height: 1.65;
+            margin-bottom: 32px;
+            min-height: 48px;
         }
         .reveal__insight .cursor {
             display: inline-block;
             width: 2px;
             height: 1em;
             background: var(--teal);
-            margin-left: 2px;
-            animation: blink 0.8s infinite;
+            margin-left: 1px;
+            animation: blink 0.7s infinite;
             vertical-align: text-bottom;
         }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        /* Confetti canvas */
-        #confetti {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 50;
-        }
+        /* ── Confetti ── */
+        #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
-        /* Booking screen */
-        .booking { max-width: 440px; width: 100%; text-align: center; }
+        /* ── Booking ── */
+        .booking { max-width: 420px; width: 100%; text-align: center; }
         .booking__title {
             font-family: var(--font-head);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .booking__sub {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-2);
             margin-bottom: 28px;
             line-height: 1.5;
         }
-        .form-group {
-            margin-bottom: 14px;
-            text-align: left;
-        }
-        .form-group label {
+        .field { margin-bottom: 12px; text-align: left; }
+        .field label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-3);
             margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 500;
         }
-        .form-group input {
+        .field input {
             width: 100%;
             font-family: var(--font-body);
-            font-size: 0.95rem;
-            padding: 12px 16px;
+            font-size: 16px; /* prevents iOS zoom */
+            padding: 13px 16px;
             background: var(--graphite);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--cloud);
             outline: none;
             transition: border-color 0.2s;
         }
-        .form-group input:focus {
-            border-color: var(--teal);
-            box-shadow: 0 0 0 2px rgba(0,212,170,0.08);
-        }
-        .form-group input::placeholder { color: var(--text-3); }
+        .field input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(0,212,170,0.06); }
+        .field input::placeholder { color: var(--text-3); }
         .booking__note {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-3);
-            margin-top: 16px;
+            margin-top: 14px;
             line-height: 1.5;
         }
 
-        /* Confirmation */
-        .confirm { text-align: center; }
-        .confirm__check {
-            width: 72px;
-            height: 72px;
+        /* ── Confirmation ── */
+        .confirm { text-align: center; max-width: 420px; }
+        .confirm__icon {
+            width: 64px; height: 64px;
             border-radius: 50%;
             background: var(--teal-dim);
             border: 2px solid var(--teal);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 24px;
-            animation: badgePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            margin: 0 auto 20px;
+            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        .confirm__check svg { width: 32px; height: 32px; stroke: var(--teal); stroke-width: 2.5; fill: none; }
+        .confirm__icon svg { width: 28px; height: 28px; stroke: var(--teal); stroke-width: 2.5; fill: none; }
         .confirm__title {
             font-family: var(--font-head);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .confirm__sub {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: var(--text-2);
-            margin-bottom: 28px;
-            line-height: 1.5;
+            line-height: 1.55;
+            margin-bottom: 24px;
         }
         .confirm__link {
             color: var(--teal);
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.2s;
+            font-size: 0.88rem;
         }
         .confirm__link:hover { color: var(--teal-light); }
 
-        /* Responsive */
+        /* ── Responsive ── */
         @media (max-width: 600px) {
-            .cards--2col { grid-template-columns: 1fr; }
-            .cards--3col { grid-template-columns: 1fr 1fr; }
-            .card { padding: 14px 12px; }
-            .screen { padding: 50px 16px; }
-            .score-badge { top: 12px; right: 12px; padding: 5px 10px; font-size: 0.78rem; }
-            .step-counter { top: 12px; left: 12px; }
+            .screen { padding: 48px 16px 32px; }
+            .welcome { padding: 0 4px; }
+            .option { padding: 13px 14px; min-height: 50px; }
+            .option__label { font-size: 0.88rem; }
+        }
+        @media (min-width: 600px) {
+            .options--grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Progress bar -->
-    <div class="progress-bar" id="progressBar">
-        <div class="progress-fill" id="progressFill"></div>
+    <div class="progress" id="progress">
+        <div class="progress__fill" id="progressFill"></div>
     </div>
-
-    <!-- Step counter -->
-    <div class="step-counter" id="stepCounter"><span id="stepNum">1</span> of 5</div>
-
-    <!-- Live score badge -->
-    <div class="score-badge" id="scoreBadge">
-        <span class="score-badge__label">Score</span>
-        <span class="score-badge__value" id="liveScore">0</span>
-        <div class="score-flyup" id="scoreFlyup"></div>
-    </div>
-
-    <!-- Toast -->
+    <div class="step-label" id="stepLabel"><span id="stepNum">1</span> of 5</div>
     <div class="toast" id="toast"></div>
-
-    <!-- Confetti -->
     <canvas id="confetti"></canvas>
 
     <!-- ===== WELCOME ===== -->
-    <div class="screen active" id="screen-welcome">
+    <div class="screen active" id="s-welcome">
         <div class="welcome">
-            <div class="welcome__logo">Ledger<span>.</span>AI</div>
+            <div class="welcome__logo">Ledger<em>.</em>AI</div>
             <div class="welcome__tagline">Stop losing hours. Start building leverage.</div>
             <h1 class="welcome__hero">Find Your <em>AI Readiness Score</em> in 45 Seconds</h1>
             <p class="welcome__sub">5 quick questions. Instant score. Personalized insights.</p>
-            <button class="btn-cta btn-cta--pulse" onclick="startQuiz()">Start Assessment</button>
+            <button class="btn btn-primary btn-primary--pulse" onclick="startQuiz()">Start Assessment</button>
             <p class="welcome__fine">No email required. No strings attached.</p>
         </div>
     </div>
 
     <!-- ===== Q1: INDUSTRY ===== -->
-    <div class="screen" id="screen-q1">
+    <div class="screen" id="s-q1">
         <div class="quiz">
             <h2 class="quiz__question">What industry are you in?</h2>
-            <div class="cards cards--2col" id="q1-cards">
-                <div class="card" data-value="Professional Services" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Professional Services</div>
-                    <div class="card__sub">Law, Accounting, Consulting</div>
+            <div class="quiz__hint">Pick the closest match</div>
+            <div class="options options--grid" id="q1">
+                <div class="option" data-v="Professional Services" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Professional Services</div><div class="option__sub">Law, Accounting, Consulting</div></div>
                 </div>
-                <div class="card" data-value="Healthcare & Wellness" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Healthcare & Wellness</div>
+                <div class="option" data-v="Healthcare & Wellness" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Healthcare & Wellness</div></div>
                 </div>
-                <div class="card" data-value="Real Estate & Property" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Real Estate & Property</div>
+                <div class="option" data-v="Real Estate & Property" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Real Estate & Property</div></div>
                 </div>
-                <div class="card" data-value="Retail & E-Commerce" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Retail & E-Commerce</div>
+                <div class="option" data-v="Retail & E-Commerce" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Retail & E-Commerce</div></div>
                 </div>
-                <div class="card" data-value="Manufacturing & Logistics" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Manufacturing & Logistics</div>
+                <div class="option" data-v="Manufacturing & Logistics" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Manufacturing & Logistics</div></div>
                 </div>
-                <div class="card" data-value="Financial Services" onclick="selectSingle(this, 'industry')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Financial Services</div>
+                <div class="option" data-v="Financial Services" onclick="pick(this,'industry')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Financial Services</div></div>
+                </div>
+                <div class="option" data-v="Other" onclick="pickOther(this,'industry','q1Other')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Other</div></div>
                 </div>
             </div>
+            <input class="other-input" id="q1Other" placeholder="Type your industry..." onkeydown="if(event.key==='Enter')confirmOther('industry','q1Other')">
+            <button class="btn btn-secondary btn--wide quiz__continue" id="q1Btn" onclick="confirmOther('industry','q1Other')">Continue</button>
         </div>
     </div>
 
     <!-- ===== Q2: TEAM SIZE ===== -->
-    <div class="screen" id="screen-q2">
+    <div class="screen" id="s-q2">
         <div class="quiz">
             <h2 class="quiz__question">How big is your team?</h2>
-            <div class="cards cards--horizontal" id="q2-cards">
-                <div class="card card--compact" data-value="Just me" onclick="selectSingle(this, 'team_size')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Just me</div>
+            <div class="quiz__hint">Including yourself</div>
+            <div class="options" id="q2">
+                <div class="option" data-v="Just me" onclick="pick(this,'team_size')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Just me</div></div>
                 </div>
-                <div class="card card--compact" data-value="2-10" onclick="selectSingle(this, 'team_size')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">2-10</div>
+                <div class="option" data-v="2-10" onclick="pick(this,'team_size')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">2 to 10</div></div>
                 </div>
-                <div class="card card--compact" data-value="11-50" onclick="selectSingle(this, 'team_size')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">11-50</div>
+                <div class="option" data-v="11-50" onclick="pick(this,'team_size')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">11 to 50</div></div>
                 </div>
-                <div class="card card--compact" data-value="51-200" onclick="selectSingle(this, 'team_size')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">51-200</div>
+                <div class="option" data-v="51-200" onclick="pick(this,'team_size')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">51 to 200</div></div>
                 </div>
-                <div class="card card--compact" data-value="200+" onclick="selectSingle(this, 'team_size')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">200+</div>
+                <div class="option" data-v="200+" onclick="pick(this,'team_size')">
+                    <div class="option__indicator"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">200+</div></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== Q3: AI TOOLS (multi-select) ===== -->
-    <div class="screen" id="screen-q3">
+    <!-- ===== Q3: AI TOOLS (multi) ===== -->
+    <div class="screen" id="s-q3">
         <div class="quiz">
             <h2 class="quiz__question">Are you using any AI tools today?</h2>
-            <p class="multi-hint">Select all that apply</p>
-            <div class="cards cards--2col" id="q3-cards">
-                <div class="card" data-value="ChatGPT / Claude / AI Assistants" onclick="toggleMulti(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">ChatGPT / Claude</div>
-                    <div class="card__sub">AI Assistants</div>
+            <div class="quiz__hint">Select all that apply</div>
+            <div class="options" id="q3">
+                <div class="option" data-v="ChatGPT / Claude / AI Assistants" onclick="toggle(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">ChatGPT / Claude</div><div class="option__sub">AI Assistants</div></div>
                 </div>
-                <div class="card" data-value="AI-powered CRM" onclick="toggleMulti(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">AI-powered CRM</div>
-                    <div class="card__sub">HubSpot AI, Salesforce Einstein</div>
+                <div class="option" data-v="AI-powered CRM" onclick="toggle(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">AI-powered CRM</div><div class="option__sub">HubSpot AI, Salesforce Einstein</div></div>
                 </div>
-                <div class="card" data-value="Email/marketing automation" onclick="toggleMulti(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Email Automation</div>
-                    <div class="card__sub">Mailchimp, Klaviyo</div>
+                <div class="option" data-v="Email/marketing automation" onclick="toggle(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Email/Marketing Automation</div><div class="option__sub">Mailchimp, Klaviyo</div></div>
                 </div>
-                <div class="card" data-value="Workflow automation" onclick="toggleMulti(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Workflow Automation</div>
-                    <div class="card__sub">Zapier, Make, Power Automate</div>
+                <div class="option" data-v="Workflow automation" onclick="toggle(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Workflow Automation</div><div class="option__sub">Zapier, Make, Power Automate</div></div>
                 </div>
-                <div class="card" data-value="AI code/data tools" onclick="toggleMulti(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">AI Code/Data Tools</div>
-                    <div class="card__sub">Copilot, custom scripts</div>
+                <div class="option" data-v="AI code/data tools" onclick="toggle(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">AI Code/Data Tools</div><div class="option__sub">Copilot, custom scripts</div></div>
                 </div>
-                <div class="card" data-value="None yet" onclick="selectNone(this)">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">None yet</div>
+                <div class="option" data-v="None yet" data-none="1" onclick="pickNone(this,'q3')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">None yet</div></div>
                 </div>
             </div>
-            <button class="btn-multi-next" id="q3Next" onclick="submitMulti()">Continue</button>
+            <button class="btn btn-primary btn--wide quiz__continue" id="q3Btn" onclick="submitMulti('ai_tools','q3')">Continue</button>
         </div>
     </div>
 
-    <!-- ===== Q4: PAIN POINT ===== -->
-    <div class="screen" id="screen-q4">
+    <!-- ===== Q4: PAIN POINT (multi) ===== -->
+    <div class="screen" id="s-q4">
         <div class="quiz">
             <h2 class="quiz__question">Where are you losing the most time?</h2>
-            <div class="cards cards--2col" id="q4-cards">
-                <div class="card" data-value="Manual data entry & reporting" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Data Entry & Reporting</div>
+            <div class="quiz__hint">Select all that apply</div>
+            <div class="options" id="q4">
+                <div class="option" data-v="Manual data entry & reporting" onclick="toggle(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Data Entry & Reporting</div></div>
                 </div>
-                <div class="card" data-value="Client communication & follow-ups" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Communication & Follow-ups</div>
+                <div class="option" data-v="Client communication & follow-ups" onclick="toggle(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Communication & Follow-ups</div></div>
                 </div>
-                <div class="card" data-value="Document creation & review" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Document Creation</div>
+                <div class="option" data-v="Document creation & review" onclick="toggle(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Document Creation & Review</div></div>
                 </div>
-                <div class="card" data-value="Scheduling & coordination" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Scheduling & Coordination</div>
+                <div class="option" data-v="Scheduling & coordination" onclick="toggle(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Scheduling & Coordination</div></div>
                 </div>
-                <div class="card" data-value="Inventory / order management" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Inventory & Orders</div>
+                <div class="option" data-v="Inventory / order management" onclick="toggle(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Inventory & Order Management</div></div>
                 </div>
-                <div class="card" data-value="We're pretty efficient already" onclick="selectSingle(this, 'pain_point')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Pretty Efficient Already</div>
+                <div class="option" data-v="Other" data-other="1" onclick="toggleOther(this,'q4','q4Other')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Other</div></div>
+                </div>
+                <div class="option" data-v="We're pretty efficient already" data-none="1" onclick="pickNone(this,'q4')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Pretty efficient already</div></div>
                 </div>
             </div>
+            <input class="other-input" id="q4Other" placeholder="What's eating your time?">
+            <button class="btn btn-primary btn--wide quiz__continue" id="q4Btn" onclick="submitMulti('pain_point','q4')">Continue</button>
         </div>
     </div>
 
-    <!-- ===== Q5: AI GOAL ===== -->
-    <div class="screen" id="screen-q5">
+    <!-- ===== Q5: AI GOAL (multi) ===== -->
+    <div class="screen" id="s-q5">
         <div class="quiz">
-            <h2 class="quiz__question">What's your #1 goal with AI?</h2>
-            <div class="cards cards--2col" id="q5-cards">
-                <div class="card" data-value="Cut costs / reduce headcount needs" onclick="selectSingle(this, 'ai_goal')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Cut Costs</div>
-                    <div class="card__sub">Reduce headcount needs</div>
+            <h2 class="quiz__question">What's your goal with AI?</h2>
+            <div class="quiz__hint">Select all that apply</div>
+            <div class="options" id="q5">
+                <div class="option" data-v="Optimize costs & efficiency" onclick="toggle(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Optimize Costs & Efficiency</div></div>
                 </div>
-                <div class="card" data-value="Speed up operations" onclick="selectSingle(this, 'ai_goal')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Speed Up Operations</div>
+                <div class="option" data-v="Speed up operations" onclick="toggle(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Speed Up Operations</div></div>
                 </div>
-                <div class="card" data-value="Improve customer experience" onclick="selectSingle(this, 'ai_goal')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Better Customer Experience</div>
+                <div class="option" data-v="Improve customer experience" onclick="toggle(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Improve Customer Experience</div></div>
                 </div>
-                <div class="card" data-value="Gain competitive advantage" onclick="selectSingle(this, 'ai_goal')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Competitive Advantage</div>
+                <div class="option" data-v="Gain competitive advantage" onclick="toggle(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Gain Competitive Advantage</div></div>
                 </div>
-                <div class="card" data-value="Just exploring / curious" onclick="selectSingle(this, 'ai_goal')">
-                    <div class="card__check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="card__label">Just Exploring</div>
+                <div class="option" data-v="Maximize team output" onclick="toggle(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Maximize Team Output</div></div>
+                </div>
+                <div class="option" data-v="Just exploring / curious" data-none="1" onclick="pickNone(this,'q5')">
+                    <div class="option__indicator option__indicator--multi"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="option__text"><div class="option__label">Just Exploring</div></div>
                 </div>
             </div>
+            <button class="btn btn-primary btn--wide quiz__continue" id="q5Btn" onclick="submitMulti('ai_goal','q5')">See My Score</button>
         </div>
     </div>
 
     <!-- ===== SCORE REVEAL ===== -->
-    <div class="screen" id="screen-reveal">
+    <div class="screen" id="s-reveal">
         <div class="reveal">
-            <div class="reveal__score-wrap">
+            <div class="reveal__loading" id="revealLoading">Calculating your score<span class="dots"></span></div>
+            <div class="reveal__score-wrap" id="revealWrap" style="display:none">
                 <div class="reveal__score" id="revealScore">0</div>
                 <div class="reveal__out-of">/ 100</div>
             </div>
-            <div class="reveal__level-badge" id="revealBadge"></div>
+            <div class="reveal__badge" id="revealBadge"></div>
             <div class="reveal__insight" id="revealInsight"></div>
-            <button class="btn-cta" onclick="goToBooking()">Book Your Free Discovery Call</button>
+            <button class="btn btn-primary" id="revealCta" style="display:none" onclick="goBooking()">Book Your Free Discovery Call</button>
         </div>
     </div>
 
     <!-- ===== BOOKING ===== -->
-    <div class="screen" id="screen-booking">
+    <div class="screen" id="s-booking">
         <div class="booking">
             <div class="booking__title">Almost there.</div>
-            <div class="booking__sub">Drop your info and book a 30-minute call. Jon will review your results beforehand so he comes prepared.</div>
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="bookName" placeholder="Your name" autofocus>
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="bookEmail" placeholder="you@company.com">
-            </div>
-            <div class="form-group">
-                <label>Company</label>
-                <input type="text" id="bookCompany" placeholder="Company name">
-            </div>
-            <button class="btn-cta" style="width:100%;margin-top:8px" onclick="submitBooking()">Book 30-Min Discovery Call</button>
-            <p class="booking__note">Your AI Readiness Score and answers will be shared with Jon to prep for your call.</p>
+            <div class="booking__sub">Drop your info and book a 30-minute call. Jon reviews your results beforehand so he comes prepared.</div>
+            <div class="field"><label>Name</label><input type="text" id="bName" placeholder="Your name"></div>
+            <div class="field"><label>Email</label><input type="email" id="bEmail" placeholder="you@company.com"></div>
+            <div class="field"><label>Company</label><input type="text" id="bCompany" placeholder="Company name"></div>
+            <button class="btn btn-primary btn--wide" style="margin-top:6px" onclick="submitBooking()">Book 30-Min Discovery Call</button>
+            <p class="booking__note">Your score and answers will be shared with Jon to prep for your call.</p>
         </div>
     </div>
 
     <!-- ===== CONFIRMATION ===== -->
-    <div class="screen" id="screen-confirm">
+    <div class="screen" id="s-confirm">
         <div class="confirm">
-            <div class="confirm__check">
-                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
+            <div class="confirm__icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="confirm__title">You're booked!</div>
             <div class="confirm__sub">Jon will come prepared with insights tailored to your business. Check your email for the calendar invite.</div>
             <a href="https://getledger.net" class="confirm__link">Learn more about Ledger.AI &rarr;</a>
         </div>
     </div>
 
-    <script>
-    // ---------------------------------------------------------------------------
-    // State
-    // ---------------------------------------------------------------------------
-    const answers = {};
-    let currentStep = 0; // 0=welcome, 1-5=questions, 6=reveal, 7=booking, 8=confirm
-    let liveScore = 0;
-    let assessResult = null;
+<script>
+// ─── State ───
+const answers = {};
+let step = 0;
+let result = null;
+const multiSets = { q3: new Set(), q4: new Set(), q5: new Set() };
 
-    // Scoring tables (mirrors backend for live score)
-    const INDUSTRY_PTS = {"Professional Services":10,"Financial Services":10,"Healthcare & Wellness":8,"Real Estate & Property":8,"Retail & E-Commerce":6,"Manufacturing & Logistics":6,"Other":5};
-    const TEAM_PTS = {"Just me":5,"2-10":8,"11-50":12,"51-200":15,"200+":15};
-    const TOOL_PTS = 6, TOOL_CAP = 30;
-    const PAIN_PTS = {"Manual data entry & reporting":20,"Client communication & follow-ups":20,"Document creation & review":20,"Scheduling & coordination":20,"Inventory / order management":20,"We're pretty efficient already":10};
-    const GOAL_PTS = {"Cut costs / reduce headcount needs":25,"Speed up operations":25,"Improve customer experience":25,"Gain competitive advantage":25,"Just exploring / curious":10};
-
-    // ---------------------------------------------------------------------------
-    // Navigation
-    // ---------------------------------------------------------------------------
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('screen-' + id).classList.add('active');
+// ─── Navigation ───
+function go(id) {
+    const cur = document.querySelector('.screen.active');
+    if (cur) {
+        cur.classList.add('exit-up');
+        cur.classList.remove('active');
+        setTimeout(() => cur.classList.remove('exit-up'), 500);
     }
+    setTimeout(() => {
+        document.getElementById('s-' + id).classList.add('active');
+        window.scrollTo(0, 0);
+    }, 80);
+}
 
-    function startQuiz() {
-        currentStep = 1;
-        showScreen('q1');
-        document.getElementById('progressBar').classList.add('visible');
-        document.getElementById('scoreBadge').classList.add('visible');
-        document.getElementById('stepCounter').classList.add('visible');
+function startQuiz() {
+    step = 1;
+    document.getElementById('progress').classList.add('visible');
+    document.getElementById('stepLabel').classList.add('visible');
+    updateProgress();
+    go('q1');
+}
+
+function updateProgress() {
+    document.getElementById('progressFill').style.width = (step / 5 * 100) + '%';
+    document.getElementById('stepNum').textContent = step;
+}
+
+function advance() {
+    step++;
+    if (step <= 5) {
         updateProgress();
-    }
-
-    function updateProgress() {
-        const pct = (currentStep / 5) * 100;
-        document.getElementById('progressFill').style.width = pct + '%';
-        document.getElementById('stepNum').textContent = currentStep;
-    }
-
-    function nextStep() {
-        currentStep++;
-        const screens = ['', 'q1', 'q2', 'q3', 'q4', 'q5', 'reveal'];
-        if (currentStep <= 5) {
-            updateProgress();
-            showScreen(screens[currentStep]);
-        } else {
-            showReveal();
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // Score animation
-    // ---------------------------------------------------------------------------
-    function addPoints(pts) {
-        if (pts <= 0) return;
-        const oldScore = liveScore;
-        liveScore += pts;
-
-        // Flyup
-        const flyup = document.getElementById('scoreFlyup');
-        flyup.textContent = '+' + pts;
-        flyup.style.animation = 'none';
-        flyup.offsetHeight; // reflow
-        flyup.style.animation = 'flyUp 0.8s ease forwards';
-
-        // Animate counter
-        const el = document.getElementById('liveScore');
-        const duration = 400;
-        const start = performance.now();
-        function tick(now) {
-            const t = Math.min((now - start) / duration, 1);
-            el.textContent = Math.round(oldScore + (liveScore - oldScore) * t);
-            if (t < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Single-select
-    // ---------------------------------------------------------------------------
-    function selectSingle(card, field) {
-        const container = card.parentElement;
-        const wasSelected = card.classList.contains('selected');
-        if (wasSelected) return;
-
-        // Visual
-        container.querySelectorAll('.card').forEach(c => {
-            c.classList.remove('selected');
-            c.classList.add('dimmed');
-        });
-        card.classList.remove('dimmed');
-        card.classList.add('selected');
-
-        // Store answer
-        const value = card.dataset.value;
-        answers[field] = value;
-
-        // Score
-        let pts = 0;
-        if (field === 'industry') pts = INDUSTRY_PTS[value] || 5;
-        if (field === 'team_size') pts = TEAM_PTS[value] || 5;
-        if (field === 'pain_point') pts = PAIN_PTS[value] || 15;
-        if (field === 'ai_goal') pts = GOAL_PTS[value] || 15;
-        addPoints(pts);
-
-        // Auto-advance
-        setTimeout(() => {
-            container.querySelectorAll('.card').forEach(c => c.classList.remove('dimmed'));
-            nextStep();
-        }, 500);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Multi-select (Q3: AI Tools)
-    // ---------------------------------------------------------------------------
-    let multiSelected = new Set();
-
-    function toggleMulti(card) {
-        const value = card.dataset.value;
-
-        // If "None yet" was selected, clear it
-        const noneCard = card.parentElement.querySelector('[data-value="None yet"]');
-        if (noneCard && noneCard.classList.contains('selected') && value !== 'None yet') {
-            noneCard.classList.remove('selected');
-            multiSelected.delete('None yet');
-        }
-
-        if (card.classList.contains('selected')) {
-            card.classList.remove('selected');
-            multiSelected.delete(value);
-        } else {
-            card.classList.add('selected');
-            multiSelected.add(value);
-        }
-
-        // Show/hide continue button
-        const btn = document.getElementById('q3Next');
-        btn.classList.toggle('visible', multiSelected.size > 0);
-    }
-
-    function selectNone(card) {
-        const container = card.parentElement;
-        container.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-        multiSelected.clear();
-        card.classList.add('selected');
-        multiSelected.add('None yet');
-        document.getElementById('q3Next').classList.add('visible');
-    }
-
-    function submitMulti() {
-        const tools = [...multiSelected].filter(t => t !== 'None yet');
-        answers.ai_tools = tools;
-
-        // Score
-        const pts = Math.min(tools.length * TOOL_PTS, TOOL_CAP);
-        addPoints(pts);
-
-        // Toast
-        if (tools.length > 0) {
-            showToast("Nice, you're already using AI tools!");
-        }
-
-        nextStep();
-    }
-
-    // ---------------------------------------------------------------------------
-    // Toast
-    // ---------------------------------------------------------------------------
-    function showToast(msg) {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Score Reveal
-    // ---------------------------------------------------------------------------
-    async function showReveal() {
-        currentStep = 6;
+        go('q' + step);
+    } else {
+        document.getElementById('stepLabel').classList.remove('visible');
         document.getElementById('progressFill').style.width = '100%';
-        document.getElementById('stepCounter').style.display = 'none';
-        showScreen('reveal');
+        go('reveal');
+        runReveal();
+    }
+}
 
-        // Call backend for official score + insight
-        try {
-            const res = await fetch('/assess', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answers })
-            });
-            assessResult = await res.json();
-        } catch (e) {
-            assessResult = { score: liveScore, level: 'Builder', level_color: '#00D4AA', insight: 'Let\'s talk about where AI can make the biggest impact on your business.', booking_url: '' };
-        }
+// ─── Single select ───
+function pick(el, field) {
+    if (el.classList.contains('selected')) return;
+    const container = el.closest('.options');
+    container.querySelectorAll('.option').forEach(o => {
+        o.classList.remove('selected');
+        o.classList.add('dimmed');
+    });
+    el.classList.remove('dimmed');
+    el.classList.add('selected');
+    answers[field] = el.dataset.v;
+    setTimeout(() => {
+        container.querySelectorAll('.option').forEach(o => o.classList.remove('dimmed'));
+        advance();
+    }, 600);
+}
 
-        // Animate score counter
-        const scoreEl = document.getElementById('revealScore');
-        const target = assessResult.score;
-        const duration = 2000;
-        const start = performance.now();
+// ─── Single select with "Other" ───
+function pickOther(el, field, inputId) {
+    const container = el.closest('.options');
+    container.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const inp = document.getElementById(inputId);
+    inp.classList.add('visible');
+    inp.focus();
+    // Show continue button
+    const btn = document.getElementById(container.id.replace('q','q') + 'Btn');
+    if (btn) btn.classList.add('visible');
+}
+function confirmOther(field, inputId) {
+    const val = document.getElementById(inputId).value.trim();
+    answers[field] = val || 'Other';
+    advance();
+}
 
-        function tick(now) {
-            const t = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-            const val = Math.round(target * eased);
-            scoreEl.textContent = val;
-            scoreEl.style.color = assessResult.level_color;
-            if (t < 1) requestAnimationFrame(tick);
-            else onScoreRevealed();
-        }
-        requestAnimationFrame(tick);
+// ─── Multi select ───
+function toggle(el, qId) {
+    const set = multiSets[qId];
+    // If "none" was selected, clear it
+    const noneEl = document.querySelector(`#${qId} [data-none]`);
+    if (noneEl && noneEl.classList.contains('selected')) {
+        noneEl.classList.remove('selected');
+        set.clear();
+    }
+    if (el.classList.contains('selected')) {
+        el.classList.remove('selected');
+        set.delete(el.dataset.v);
+    } else {
+        el.classList.add('selected');
+        set.add(el.dataset.v);
+    }
+    document.getElementById(qId + 'Btn').classList.toggle('visible', set.size > 0);
+}
+
+function toggleOther(el, qId, inputId) {
+    toggle(el, qId);
+    const inp = document.getElementById(inputId);
+    if (el.classList.contains('selected')) {
+        inp.classList.add('visible');
+        inp.focus();
+    } else {
+        inp.classList.remove('visible');
+    }
+}
+
+function pickNone(el, qId) {
+    const set = multiSets[qId];
+    const container = document.getElementById(qId);
+    container.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    set.clear();
+    el.classList.add('selected');
+    set.add(el.dataset.v);
+    // Hide any other input
+    const otherInp = container.parentElement.querySelector('.other-input');
+    if (otherInp) otherInp.classList.remove('visible');
+    document.getElementById(qId + 'Btn').classList.add('visible');
+}
+
+function submitMulti(field, qId) {
+    const set = multiSets[qId];
+    let vals = [...set].filter(v => v !== 'None yet' && v !== "We're pretty efficient already" && v !== 'Just exploring / curious' && v !== 'Other');
+    // Add "Other" text if present
+    const otherInp = document.getElementById(qId + 'Other');
+    if (otherInp && otherInp.classList.contains('visible')) {
+        const txt = otherInp.value.trim();
+        if (txt) vals.push(txt);
+    }
+    // Handle special none/exploring values
+    if (set.has('None yet') || set.has("We're pretty efficient already") || set.has('Just exploring / curious')) {
+        answers[field] = [...set][0]; // single value
+    } else {
+        answers[field] = vals;
     }
 
-    function onScoreRevealed() {
-        // Badge
-        const badge = document.getElementById('revealBadge');
-        badge.textContent = assessResult.level;
-        badge.style.background = assessResult.level_color + '18';
-        badge.style.color = assessResult.level_color;
-        badge.style.border = '1px solid ' + assessResult.level_color + '40';
-        badge.classList.add('show');
-
-        // Confetti for 60+
-        if (assessResult.score >= 60) fireConfetti();
-
-        // Typewriter insight
-        setTimeout(() => typewriterInsight(assessResult.insight), 600);
+    // Toast for Q3
+    if (qId === 'q3' && vals.length > 0) {
+        showToast("Nice, you're already using AI tools!");
     }
+    advance();
+}
 
-    function typewriterInsight(text) {
-        const el = document.getElementById('revealInsight');
-        el.innerHTML = '<span class="cursor"></span>';
-        let i = 0;
-        function type() {
-            if (i < text.length) {
-                el.innerHTML = text.slice(0, i + 1) + '<span class="cursor"></span>';
-                i++;
-                setTimeout(type, 25);
-            } else {
-                el.innerHTML = text;
-            }
-        }
-        type();
-    }
+// ─── Toast ───
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
 
-    // ---------------------------------------------------------------------------
-    // Confetti
-    // ---------------------------------------------------------------------------
-    function fireConfetti() {
-        const canvas = document.getElementById('confetti');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+// ─── Score Reveal ───
+async function runReveal() {
+    const loading = document.getElementById('revealLoading');
+    const wrap = document.getElementById('revealWrap');
+    const cta = document.getElementById('revealCta');
 
-        const colors = ['#00D4AA', '#00F5C4', '#FFD700', '#F0F0F2', '#00D4AA'];
-        const pieces = [];
-
-        for (let i = 0; i < 80; i++) {
-            pieces.push({
-                x: canvas.width / 2 + (Math.random() - 0.5) * 200,
-                y: canvas.height / 2,
-                vx: (Math.random() - 0.5) * 12,
-                vy: Math.random() * -14 - 4,
-                w: Math.random() * 8 + 4,
-                h: Math.random() * 6 + 3,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                rot: Math.random() * 360,
-                rv: (Math.random() - 0.5) * 10,
-                gravity: 0.25,
-                life: 1,
-            });
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let alive = false;
-            pieces.forEach(p => {
-                if (p.life <= 0) return;
-                alive = true;
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += p.gravity;
-                p.rot += p.rv;
-                p.life -= 0.012;
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rot * Math.PI / 180);
-                ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-                ctx.restore();
-            });
-            if (alive) requestAnimationFrame(draw);
-            else ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-        requestAnimationFrame(draw);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Booking
-    // ---------------------------------------------------------------------------
-    function goToBooking() {
-        currentStep = 7;
-        document.getElementById('progressBar').classList.remove('visible');
-        document.getElementById('scoreBadge').classList.remove('visible');
-        showScreen('booking');
-        document.getElementById('bookName').focus();
-    }
-
-    function submitBooking() {
-        const name = document.getElementById('bookName').value.trim();
-        const email = document.getElementById('bookEmail').value.trim();
-        const company = document.getElementById('bookCompany').value.trim();
-
-        if (!name || !email) {
-            showToast('Please fill in your name and email.');
-            return;
-        }
-
-        // Log to sheets
-        const logData = {
-            name, email, company,
-            score: assessResult.score,
-            level: assessResult.level,
-            industry: answers.industry || '',
-            team_size: answers.team_size || '',
-            ai_tools: answers.ai_tools || [],
-            pain_point: answers.pain_point || '',
-            ai_goal: answers.ai_goal || '',
-            booked: true,
-            insight: assessResult.insight || '',
-        };
-
-        fetch('/log', {
+    try {
+        const res = await fetch('/assess', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(logData),
-        }).catch(() => {}); // Best-effort
-
-        // Open booking link
-        const url = assessResult.booking_url || 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0XciQbDe7_Ych-_xz1QP5mPqUXkIZ8mWjbQFKCJxY4TGdOR51h_8Srbg753dKn46oMQ-8T8d_F';
-        window.open(url, '_blank');
-
-        // Show confirmation
-        currentStep = 8;
-        showScreen('confirm');
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ answers })
+        });
+        result = await res.json();
+    } catch(e) {
+        result = { score: 50, level: 'Builder', level_color: '#00D4AA', insight: 'Let\'s talk about where AI can make the biggest impact for you.', booking_url: '' };
     }
-    </script>
+
+    // Hide loading, show score
+    loading.style.display = 'none';
+    wrap.style.display = 'block';
+
+    // CountUp
+    const el = document.getElementById('revealScore');
+    const target = result.score;
+    const dur = 1800;
+    const start = performance.now();
+    function tick(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(target * eased);
+        el.style.color = result.level_color;
+        if (t < 1) requestAnimationFrame(tick);
+        else finishReveal();
+    }
+    requestAnimationFrame(tick);
+}
+
+function finishReveal() {
+    // Badge
+    const badge = document.getElementById('revealBadge');
+    badge.textContent = result.level;
+    badge.style.background = result.level_color + '15';
+    badge.style.color = result.level_color;
+    badge.style.border = '1px solid ' + result.level_color + '30';
+    badge.classList.add('show');
+
+    if (result.score >= 60) fireConfetti();
+
+    // Typewriter
+    setTimeout(() => {
+        typewrite(result.insight, document.getElementById('revealInsight'), () => {
+            document.getElementById('revealCta').style.display = 'inline-block';
+            document.getElementById('revealCta').style.animation = 'pop 0.3s ease forwards';
+        });
+    }, 500);
+}
+
+function typewrite(text, el, cb) {
+    el.innerHTML = '<span class="cursor"></span>';
+    let i = 0;
+    function t() {
+        if (i < text.length) {
+            el.innerHTML = text.slice(0, ++i) + '<span class="cursor"></span>';
+            setTimeout(t, 22);
+        } else {
+            el.textContent = text;
+            if (cb) cb();
+        }
+    }
+    t();
+}
+
+// ─── Confetti ───
+function fireConfetti() {
+    const c = document.getElementById('confetti');
+    const ctx = c.getContext('2d');
+    c.width = innerWidth; c.height = innerHeight;
+    const colors = ['#00D4AA','#00F5C4','#FFD700','#F0F0F2'];
+    const ps = [];
+    for (let i = 0; i < 70; i++) {
+        ps.push({ x: c.width/2+(Math.random()-0.5)*160, y: c.height*0.4, vx:(Math.random()-0.5)*10, vy:Math.random()*-12-3, w:Math.random()*7+3, h:Math.random()*5+2, color:colors[Math.floor(Math.random()*colors.length)], rot:Math.random()*360, rv:(Math.random()-0.5)*8, life:1 });
+    }
+    function draw() {
+        ctx.clearRect(0,0,c.width,c.height);
+        let alive = false;
+        ps.forEach(p => {
+            if(p.life<=0) return;
+            alive=true; p.x+=p.vx; p.y+=p.vy; p.vy+=0.22; p.rot+=p.rv; p.life-=0.013;
+            ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180); ctx.globalAlpha=p.life;
+            ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+        });
+        if(alive) requestAnimationFrame(draw);
+        else ctx.clearRect(0,0,c.width,c.height);
+    }
+    requestAnimationFrame(draw);
+}
+
+// ─── Booking ───
+function goBooking() {
+    document.getElementById('progress').classList.remove('visible');
+    go('booking');
+    setTimeout(() => document.getElementById('bName').focus(), 300);
+}
+
+function submitBooking() {
+    const name = document.getElementById('bName').value.trim();
+    const email = document.getElementById('bEmail').value.trim();
+    const company = document.getElementById('bCompany').value.trim();
+    if (!name || !email) { showToast('Name and email are required.'); return; }
+
+    // Build summary for sheets + email
+    const logData = {
+        name, email, company,
+        score: result.score,
+        level: result.level,
+        industry: answers.industry || '',
+        team_size: answers.team_size || '',
+        ai_tools: Array.isArray(answers.ai_tools) ? answers.ai_tools : [answers.ai_tools || ''],
+        pain_point: Array.isArray(answers.pain_point) ? answers.pain_point.join(', ') : (answers.pain_point || ''),
+        ai_goal: Array.isArray(answers.ai_goal) ? answers.ai_goal.join(', ') : (answers.ai_goal || ''),
+        booked: true,
+        insight: result.insight || '',
+    };
+
+    fetch('/log', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(logData),
+    }).catch(() => {});
+
+    // Open booking link
+    const url = result.booking_url || 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0XciQbDe7_Ych-_xz1QP5mPqUXkIZ8mWjbQFKCJxY4TGdOR51h_8Srbg753dKn46oMQ-8T8d_F';
+    window.open(url, '_blank');
+
+    go('confirm');
+}
+</script>
 </body>
 </html>

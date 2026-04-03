@@ -5,53 +5,70 @@ calculate_score() — deterministic score from quiz answers
 generate_insight() — Claude-powered personalized 2-3 sentence insight
 """
 
-import os
 from app.config import (
     INDUSTRY_SCORES,
     TEAM_SIZE_SCORES,
     AI_TOOLS_PTS_EACH,
     AI_TOOLS_CAP,
-    PAIN_POINT_SCORES,
-    AI_GOAL_SCORES,
+    PAIN_POINT_PTS_EACH,
+    PAIN_POINT_CAP,
+    PAIN_POINT_NONE_VALUE,
+    PAIN_POINT_NONE_PTS,
+    AI_GOAL_PTS_EACH,
+    AI_GOAL_CAP,
+    AI_GOAL_NONE_VALUE,
+    AI_GOAL_NONE_PTS,
     READINESS_LEVELS,
 )
+
+
+def _to_list(val):
+    """Normalize a value to a list (handles str, list, or None)."""
+    if val is None:
+        return []
+    if isinstance(val, str):
+        return [val]
+    return list(val)
 
 
 def calculate_score(answers):
     """
     Calculate AI Readiness Score from quiz answers.
 
-    Args:
-        answers: dict with keys: industry, team_size, ai_tools (list), pain_point, ai_goal
-
-    Returns:
-        dict with: score, level, level_color, breakdown
+    Returns dict with: score, level, level_color, breakdown
     """
     breakdown = {}
 
     # Industry (0-10)
-    breakdown["industry"] = INDUSTRY_SCORES.get(answers.get("industry", ""), 5)
+    industry = answers.get("industry", "")
+    breakdown["industry"] = INDUSTRY_SCORES.get(industry, 5)
 
     # Team size (0-15)
     breakdown["team_size"] = TEAM_SIZE_SCORES.get(answers.get("team_size", ""), 5)
 
-    # AI tools (0-30, 6 pts each)
-    tools = answers.get("ai_tools", [])
-    if isinstance(tools, str):
-        tools = [tools]
-    tools_score = len(tools) * AI_TOOLS_PTS_EACH
-    breakdown["ai_tools"] = min(tools_score, AI_TOOLS_CAP)
+    # AI tools — multi-select, 6 pts each, cap 30
+    tools = _to_list(answers.get("ai_tools"))
+    tools = [t for t in tools if t and t != "None yet"]
+    breakdown["ai_tools"] = min(len(tools) * AI_TOOLS_PTS_EACH, AI_TOOLS_CAP)
 
-    # Pain point (0-20)
-    breakdown["pain_point"] = PAIN_POINT_SCORES.get(answers.get("pain_point", ""), 15)
+    # Pain point — multi-select, 5 pts each, cap 20. "Pretty efficient" = 10 solo.
+    pain = _to_list(answers.get("pain_point"))
+    if PAIN_POINT_NONE_VALUE in pain or (len(pain) == 1 and pain[0] == PAIN_POINT_NONE_VALUE):
+        breakdown["pain_point"] = PAIN_POINT_NONE_PTS
+    else:
+        pain = [p for p in pain if p and p != PAIN_POINT_NONE_VALUE]
+        breakdown["pain_point"] = min(len(pain) * PAIN_POINT_PTS_EACH, PAIN_POINT_CAP)
 
-    # AI goal (0-25)
-    breakdown["ai_goal"] = AI_GOAL_SCORES.get(answers.get("ai_goal", ""), 15)
+    # AI goal — multi-select, 6 pts each, cap 25. "Just exploring" = 10 solo.
+    goals = _to_list(answers.get("ai_goal"))
+    if AI_GOAL_NONE_VALUE in goals or (len(goals) == 1 and goals[0] == AI_GOAL_NONE_VALUE):
+        breakdown["ai_goal"] = AI_GOAL_NONE_PTS
+    else:
+        goals = [g for g in goals if g and g != AI_GOAL_NONE_VALUE]
+        breakdown["ai_goal"] = min(len(goals) * AI_GOAL_PTS_EACH, AI_GOAL_CAP)
 
-    score = sum(breakdown.values())
-    score = max(0, min(100, score))
+    score = max(0, min(100, sum(breakdown.values())))
 
-    # Determine level
     level_info = READINESS_LEVELS[0]
     for lvl in READINESS_LEVELS:
         if lvl["min"] <= score <= lvl["max"]:
@@ -67,11 +84,7 @@ def calculate_score(answers):
 
 
 def generate_insight(answers, score, level):
-    """
-    Generate a personalized 2-3 sentence insight using Claude.
-
-    Returns the insight string, or a fallback if the API call fails.
-    """
+    """Generate a personalized 2-3 sentence insight using Claude."""
     fallback_insights = {
         "Explorer": (
             "You're at the starting line, and that's exciting. A quick discovery call "
@@ -97,10 +110,16 @@ def generate_insight(answers, score, level):
 
     try:
         import anthropic
-
         client = anthropic.Anthropic()
 
-        tools_str = ", ".join(answers.get("ai_tools", [])) or "none"
+        tools = _to_list(answers.get("ai_tools"))
+        tools_str = ", ".join(t for t in tools if t != "None yet") or "none"
+
+        pain = _to_list(answers.get("pain_point"))
+        pain_str = ", ".join(pain) if pain else "not specified"
+
+        goals = _to_list(answers.get("ai_goal"))
+        goals_str = ", ".join(goals) if goals else "not specified"
 
         prompt = f"""Write a 2-3 sentence personalized insight for a business prospect who just completed an AI readiness assessment. Be direct, confident, and specific to their situation. No fluff, no generic advice.
 
@@ -108,17 +127,18 @@ Their answers:
 - Industry: {answers.get('industry', 'Unknown')}
 - Team size: {answers.get('team_size', 'Unknown')}
 - AI tools currently using: {tools_str}
-- Biggest time sink: {answers.get('pain_point', 'Unknown')}
-- #1 AI goal: {answers.get('ai_goal', 'Unknown')}
+- Biggest time sinks: {pain_str}
+- AI goals: {goals_str}
 - Score: {score}/100 (Level: {level})
 
 Rules:
-- Address their specific pain point and industry
+- Address their specific pain points and industry
 - Reference their current tool usage (or lack of it)
 - End with a forward-looking statement that makes them want to book a call
-- Never use dashes, use commas or semicolons instead
+- Never use dashes; use commas or semicolons instead
 - Keep it under 50 words
-- Sound like a sharp consultant, not a chatbot"""
+- Sound like a sharp consultant, not a chatbot
+- We help people optimize and maximize their team's value, never mention reducing headcount"""
 
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
